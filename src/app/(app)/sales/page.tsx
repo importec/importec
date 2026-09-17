@@ -4,7 +4,8 @@ import { prisma } from "@/server/db";
 import { requireSession } from "@/lib/auth/session";
 import { can } from "@/lib/auth/permissions";
 import { buttonVariants } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge, type StatusTone } from "@/components/ui/status-badge";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Table,
   TableBody,
@@ -19,6 +20,12 @@ const STATUS_LABEL: Record<string, string> = {
   CONFIRMED: "Confirmada",
   RETURNED: "Devuelta",
   CANCELLED: "Cancelada",
+};
+
+const STATUS_TONE: Record<string, StatusTone> = {
+  CONFIRMED: "success",
+  RETURNED: "warning",
+  CANCELLED: "danger",
 };
 
 export default async function SalesPage() {
@@ -53,10 +60,11 @@ export default async function SalesPage() {
       </div>
 
       {sales.length === 0 ? (
-        <div className="flex h-40 flex-col items-center justify-center gap-2 rounded-lg border bg-card text-muted-foreground">
-          <ShoppingCart className="size-8" />
-          <p>Todavia no hay ventas registradas.</p>
-        </div>
+        <EmptyState
+          icon={ShoppingCart}
+          title="Todavia no hay ventas registradas"
+          description="Las ventas que confirmes van a aparecer aca."
+        />
       ) : (
         <>
           {/* Mobile: tarjetas */}
@@ -79,9 +87,9 @@ export default async function SalesPage() {
                     <span className="min-w-0 flex-1 truncate font-medium">
                       {sale.customer ? customerName(sale.customer) : "Consumidor final"}
                     </span>
-                    <Badge variant={sale.status === "CONFIRMED" ? "default" : "destructive"} className="shrink-0">
+                    <StatusBadge tone={STATUS_TONE[sale.status]} className="shrink-0">
                       {STATUS_LABEL[sale.status]}
-                    </Badge>
+                    </StatusBadge>
                   </div>
                   {items && <p className="mt-0.5 truncate text-xs text-muted-foreground">{items}</p>}
                   <div className="mt-2 flex items-center justify-between border-t pt-2 text-sm">
@@ -89,9 +97,9 @@ export default async function SalesPage() {
                       {sale.createdAt.toLocaleDateString("es-AR")} · {sale.soldByUser.name}
                     </span>
                     <div className="text-right">
-                      <p className="font-medium">{formatCurrency(sale.total.toNumber(), sale.currency)}</p>
+                      <p className="font-medium tabular-nums">{formatCurrency(sale.total.toNumber(), sale.currency)}</p>
                       {showProfit && (
-                        <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                        <p className="text-xs tabular-nums text-success">
                           {formatCurrency(sale.profitTotal.toNumber(), sale.currency)}
                         </p>
                       )}
@@ -138,15 +146,13 @@ export default async function SalesPage() {
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{sale.soldByUser.name}</TableCell>
                     <TableCell>
-                      <Badge variant={sale.status === "CONFIRMED" ? "default" : "destructive"}>
-                        {STATUS_LABEL[sale.status]}
-                      </Badge>
+                      <StatusBadge tone={STATUS_TONE[sale.status]}>{STATUS_LABEL[sale.status]}</StatusBadge>
                     </TableCell>
-                    <TableCell className="text-right font-medium">
+                    <TableCell className="text-right font-medium tabular-nums">
                       {formatCurrency(sale.total.toNumber(), sale.currency)}
                     </TableCell>
                     {showProfit && (
-                      <TableCell className="text-right text-emerald-600 dark:text-emerald-400">
+                      <TableCell className="text-right tabular-nums text-success">
                         {formatCurrency(sale.profitTotal.toNumber(), sale.currency)}
                       </TableCell>
                     )}

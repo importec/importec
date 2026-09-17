@@ -17,7 +17,7 @@ export async function AlertsBell() {
       <Bell className="size-4" />
       {alerts.length > 0 && (
         <span
-          className={`absolute top-0.5 right-0.5 flex size-3.5 items-center justify-center rounded-full text-[9px] font-medium text-white ${hasCritical ? "bg-destructive" : "bg-amber-500"}`}
+          className={`absolute top-0.5 right-0.5 flex size-3.5 items-center justify-center rounded-full text-[9px] font-medium ${hasCritical ? "bg-destructive text-white" : "bg-warning text-warning-foreground"}`}
         >
           {alerts.length > 9 ? "9+" : alerts.length}
         </span>

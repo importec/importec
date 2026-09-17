@@ -6,7 +6,7 @@ import { requireSession } from "@/lib/auth/session";
 import { can } from "@/lib/auth/permissions";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge, type StatusTone } from "@/components/ui/status-badge";
 import { cn } from "@/lib/utils";
 import { customerName, formatCurrency, productTitle } from "@/lib/format";
 
@@ -14,6 +14,12 @@ const STATUS_LABEL: Record<string, string> = {
   CONFIRMED: "Confirmada",
   RETURNED: "Devuelta",
   CANCELLED: "Cancelada",
+};
+
+const STATUS_TONE: Record<string, StatusTone> = {
+  CONFIRMED: "success",
+  RETURNED: "warning",
+  CANCELLED: "danger",
 };
 
 const METHOD_LABEL: Record<string, string> = {
@@ -62,9 +68,7 @@ export default async function SaleDetailPage({
           <h1 className="text-xl font-semibold tracking-tight">
             Venta del {sale.createdAt.toLocaleDateString("es-AR")}
           </h1>
-          <Badge variant={sale.status === "CONFIRMED" ? "default" : "destructive"}>
-            {STATUS_LABEL[sale.status]}
-          </Badge>
+          <StatusBadge tone={STATUS_TONE[sale.status]}>{STATUS_LABEL[sale.status]}</StatusBadge>
         </div>
         <p className="text-sm text-muted-foreground">
           {sale.customer ? (
@@ -112,7 +116,7 @@ export default async function SaleDetailPage({
               <span>{formatCurrency(sale.total.toNumber(), sale.currency)}</span>
             </div>
             {showCosts && (
-              <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
+              <div className="flex justify-between text-success">
                 <span>Ganancia</span>
                 <span>{formatCurrency(sale.profitTotal.toNumber(), sale.currency)}</span>
               </div>

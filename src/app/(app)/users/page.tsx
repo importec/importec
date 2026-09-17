@@ -5,7 +5,7 @@ import { prisma } from "@/server/db";
 import { requireSession } from "@/lib/auth/session";
 import { can, ROLE_LABELS } from "@/lib/auth/permissions";
 import { buttonVariants } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import {
   Table,
   TableBody,
@@ -55,9 +55,9 @@ export default async function UsersPage() {
                     <span className="ml-1 text-xs text-muted-foreground">(vos)</span>
                   )}
                 </span>
-                <Badge variant={user.isActive ? "default" : "destructive"} className="shrink-0">
+                <StatusBadge tone={user.isActive ? "success" : "danger"} className="shrink-0">
                   {user.isActive ? "Activo" : "Inactivo"}
-                </Badge>
+                </StatusBadge>
               </div>
               <p className="truncate text-xs text-muted-foreground">{user.email}</p>
               <p className="mt-2 border-t pt-2 text-xs text-muted-foreground">{ROLE_LABELS[user.role]}</p>
@@ -101,9 +101,9 @@ export default async function UsersPage() {
                   <TableCell className="text-sm text-muted-foreground">{user.email}</TableCell>
                   <TableCell className="text-sm">{ROLE_LABELS[user.role]}</TableCell>
                   <TableCell>
-                    <Badge variant={user.isActive ? "default" : "destructive"}>
+                    <StatusBadge tone={user.isActive ? "success" : "danger"}>
                       {user.isActive ? "Activo" : "Inactivo"}
-                    </Badge>
+                    </StatusBadge>
                   </TableCell>
                 </TableRow>
               ))

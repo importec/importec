@@ -6,7 +6,7 @@ import { requireSession } from "@/lib/auth/session";
 import { can, ROLE_LABELS } from "@/lib/auth/permissions";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { cn } from "@/lib/utils";
 import { UserEditForm } from "./user-edit-form";
 import { ResetPasswordForm } from "./reset-password-form";
@@ -36,9 +36,9 @@ export default async function UserDetailPage({
         </Link>
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-xl font-semibold tracking-tight">{user.name}</h1>
-          <Badge variant={user.isActive ? "default" : "destructive"}>
+          <StatusBadge tone={user.isActive ? "success" : "danger"}>
             {user.isActive ? "Activo" : "Inactivo"}
-          </Badge>
+          </StatusBadge>
         </div>
         <p className="text-sm text-muted-foreground">
           {user.email} · {ROLE_LABELS[user.role]}

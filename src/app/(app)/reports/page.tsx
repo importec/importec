@@ -72,7 +72,7 @@ export default async function ReportsPage({
                       {formatCurrency(row.total, row.currency as "USD" | "ARS")}
                     </span>
                     {showFinancials && (
-                      <span className="block text-xs text-emerald-600 dark:text-emerald-400">
+                      <span className="block text-xs text-success">
                         Ganancia {formatCurrency(row.profit, row.currency as "USD" | "ARS")}
                       </span>
                     )}

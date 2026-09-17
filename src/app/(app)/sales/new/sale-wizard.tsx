@@ -445,7 +445,7 @@ export function SaleWizard({
                 Falta cubrir {formatCurrency(remaining, currency)}
               </span>
             ) : (
-              <span className="font-medium text-emerald-600 dark:text-emerald-400">Pago completo</span>
+              <span className="font-medium text-success">Pago completo</span>
             )}
           </div>
         </CardContent>

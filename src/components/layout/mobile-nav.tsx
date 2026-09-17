@@ -27,7 +27,7 @@ export function MobileNav() {
       <SheetContent side="left" className="w-64 p-0">
         <SheetHeader className="h-14 justify-center border-b">
           <SheetTitle className="flex items-center gap-2 text-sm">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-foreground text-background text-sm font-semibold">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground">
               I
             </div>
             Importec

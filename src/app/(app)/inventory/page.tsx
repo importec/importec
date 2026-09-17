@@ -5,7 +5,7 @@ import { prisma } from "@/server/db";
 import { requireSession } from "@/lib/auth/session";
 import { can } from "@/lib/auth/permissions";
 import { buttonVariants } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import {
   Table,
   TableBody,
@@ -15,21 +15,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { STATUS_LABELS, productTitle } from "@/lib/format";
+import { STATUS_TONE } from "@/lib/inventory/status";
 import { InventoryFilters } from "./inventory-filters";
 import { Plus, Package, MessageCircle } from "lucide-react";
 import { EditableNumber } from "@/components/inventory/editable-number";
 import { updateInventoryUnitPrice, updateStockLotCost, updateProductListPrice } from "./actions";
-
-const STATUS_VARIANT: Record<InventoryUnitStatus, "default" | "secondary" | "outline" | "destructive"> = {
-  AVAILABLE: "default",
-  RESERVED: "secondary",
-  SOLD: "outline",
-  IN_REVIEW: "secondary",
-  IN_REPAIR: "secondary",
-  RETURNED: "destructive",
-  DISPOSED: "destructive",
-};
 
 export default async function InventoryPage({
   searchParams,
@@ -125,10 +117,11 @@ export default async function InventoryPage({
       <InventoryFilters />
 
       {units.length === 0 ? (
-        <div className="flex h-40 flex-col items-center justify-center gap-2 rounded-lg border bg-card text-muted-foreground">
-          <Package className="size-8" />
-          <p>No hay equipos que coincidan con estos filtros.</p>
-        </div>
+        <EmptyState
+          icon={Package}
+          title="No hay equipos que coincidan"
+          description="Probá ajustar los filtros o el termino de busqueda."
+        />
       ) : (
         <>
           {/* Mobile: tarjetas */}
@@ -139,9 +132,9 @@ export default async function InventoryPage({
                   <Link href={`/inventory/${unit.id}`} className="min-w-0 flex-1 font-medium hover:underline">
                     {productTitle(unit.product)}
                   </Link>
-                  <Badge variant={STATUS_VARIANT[unit.status]} className="shrink-0">
+                  <StatusBadge tone={STATUS_TONE[unit.status]} className="shrink-0">
                     {STATUS_LABELS[unit.status]}
-                  </Badge>
+                  </StatusBadge>
                 </div>
                 <p className="mt-0.5 truncate text-xs text-muted-foreground">
                   {[unit.product.color, unit.batteryPct ? `${unit.batteryPct}% bateria` : null, unit.imei ?? unit.serialNumber]
@@ -155,6 +148,7 @@ export default async function InventoryPage({
                       <EditableNumber
                         value={unit.cost.toNumber()}
                         onSave={updateInventoryUnitPrice.bind(null, unit.id, "cost")}
+                        className="tabular-nums"
                       />
                     </div>
                   )}
@@ -163,7 +157,7 @@ export default async function InventoryPage({
                     <EditableNumber
                       value={unit.listPrice.toNumber()}
                       onSave={updateInventoryUnitPrice.bind(null, unit.id, "listPrice")}
-                      className="font-medium"
+                      className="font-medium tabular-nums"
                     />
                   </div>
                 </div>
@@ -200,17 +194,17 @@ export default async function InventoryPage({
                       </span>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={STATUS_VARIANT[unit.status]}>{STATUS_LABELS[unit.status]}</Badge>
+                      <StatusBadge tone={STATUS_TONE[unit.status]}>{STATUS_LABELS[unit.status]}</StatusBadge>
                     </TableCell>
                     {showCosts && (
-                      <TableCell className="text-right text-sm">
+                      <TableCell className="text-right text-sm tabular-nums">
                         <EditableNumber
                           value={unit.cost.toNumber()}
                           onSave={updateInventoryUnitPrice.bind(null, unit.id, "cost")}
                         />
                       </TableCell>
                     )}
-                    <TableCell className="text-right text-sm font-medium">
+                    <TableCell className="text-right text-sm font-medium tabular-nums">
                       <EditableNumber
                         value={unit.listPrice.toNumber()}
                         onSave={updateInventoryUnitPrice.bind(null, unit.id, "listPrice")}
@@ -231,7 +225,7 @@ export default async function InventoryPage({
           </CardHeader>
           <CardContent className="p-0">
             {stockLots.length === 0 ? (
-              <p className="p-4 text-center text-sm text-muted-foreground">No hay accesorios en stock.</p>
+              <p className="p-6 text-center text-sm text-muted-foreground">No hay accesorios en stock.</p>
             ) : (
               <>
                 {/* Mobile: tarjetas */}
@@ -240,7 +234,7 @@ export default async function InventoryPage({
                     <div key={lot.id} className="rounded-lg border p-3">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-medium">{productTitle(lot.product)}</span>
-                        <span className="shrink-0 text-sm text-muted-foreground">x{lot.quantity}</span>
+                        <span className="shrink-0 text-sm text-muted-foreground tabular-nums">x{lot.quantity}</span>
                       </div>
                       <p className="text-xs text-muted-foreground">{lot.location.name}</p>
                       <div className="mt-2 flex items-center gap-4 border-t pt-2 text-sm">
@@ -250,6 +244,7 @@ export default async function InventoryPage({
                             <EditableNumber
                               value={lot.avgCost.toNumber()}
                               onSave={updateStockLotCost.bind(null, lot.id)}
+                              className="tabular-nums"
                             />
                           </div>
                         )}
@@ -258,7 +253,7 @@ export default async function InventoryPage({
                           <EditableNumber
                             value={lot.product.listPrice?.toNumber() ?? null}
                             onSave={updateProductListPrice.bind(null, lot.product.id)}
-                            className="font-medium"
+                            className="font-medium tabular-nums"
                           />
                         </div>
                       </div>
@@ -283,16 +278,16 @@ export default async function InventoryPage({
                         <TableRow key={lot.id}>
                           <TableCell className="font-medium">{productTitle(lot.product)}</TableCell>
                           <TableCell className="text-sm text-muted-foreground">{lot.location.name}</TableCell>
-                          <TableCell className="text-right">{lot.quantity}</TableCell>
+                          <TableCell className="text-right tabular-nums">{lot.quantity}</TableCell>
                           {showCosts && (
-                            <TableCell className="text-right text-sm">
+                            <TableCell className="text-right text-sm tabular-nums">
                               <EditableNumber
                                 value={lot.avgCost.toNumber()}
                                 onSave={updateStockLotCost.bind(null, lot.id)}
                               />
                             </TableCell>
                           )}
-                          <TableCell className="text-right text-sm font-medium">
+                          <TableCell className="text-right text-sm font-medium tabular-nums">
                             <EditableNumber
                               value={lot.product.listPrice?.toNumber() ?? null}
                               onSave={updateProductListPrice.bind(null, lot.product.id)}

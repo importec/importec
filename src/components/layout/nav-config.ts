@@ -33,12 +33,17 @@ export type NavGroup = {
 
 export const NAV_GROUPS: NavGroup[] = [
   {
+    label: "General",
+    items: [{ label: "Dashboard", href: "/dashboard", icon: LayoutDashboard }],
+  },
+  {
     label: "Operacion",
     items: [
-      { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
       { label: "Inventario", href: "/inventory", icon: Package },
       { label: "Ventas", href: "/sales", icon: ShoppingCart },
-      { label: "Clientes", href: "/customers", icon: Users },
+      { label: "Plan canje", href: "/trade-ins", icon: Repeat },
+      { label: "Consignacion", href: "/consignments", icon: HandCoins },
+      { label: "Servicio tecnico", href: "/repairs", icon: Wrench },
     ],
   },
   {
@@ -49,21 +54,22 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: "Servicios",
+    label: "Relaciones",
     items: [
-      { label: "Servicio tecnico", href: "/repairs", icon: Wrench },
-      { label: "Plan canje", href: "/trade-ins", icon: Repeat },
-      { label: "Consignacion", href: "/consignments", icon: HandCoins },
+      { label: "Clientes", href: "/customers", icon: Users },
+      { label: "Proveedores", href: "/suppliers", icon: Truck },
     ],
   },
   {
-    label: "Gestion",
+    label: "Finanzas",
     items: [
       { label: "Caja y finanzas", href: "/finance", icon: Wallet },
-      { label: "Proveedores", href: "/suppliers", icon: Truck },
       { label: "Gastos", href: "/expenses", icon: Receipt },
       { label: "Reportes", href: "/reports", icon: BarChart3 },
-      { label: "Usuarios", href: "/users", icon: ShieldCheck },
     ],
+  },
+  {
+    label: "Sistema",
+    items: [{ label: "Usuarios", href: "/users", icon: ShieldCheck }],
   },
 ];

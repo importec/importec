@@ -6,7 +6,7 @@ import { requireSession } from "@/lib/auth/session";
 import { can } from "@/lib/auth/permissions";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge, type StatusTone } from "@/components/ui/status-badge";
 import { cn } from "@/lib/utils";
 import { customerName, formatCurrency, productTitle } from "@/lib/format";
 
@@ -16,12 +16,26 @@ const SALE_STATUS_LABEL: Record<string, string> = {
   CANCELLED: "Cancelada",
 };
 
+const SALE_STATUS_TONE: Record<string, StatusTone> = {
+  CONFIRMED: "success",
+  RETURNED: "warning",
+  CANCELLED: "danger",
+};
+
 const CONSIGNMENT_STATUS_LABEL: Record<string, string> = {
   ACTIVE: "Activa",
   PARTIALLY_SETTLED: "Vendida, pendiente de liquidar",
   SETTLED: "Liquidada",
   RETURNED: "Devuelta",
   EXPIRED: "Vencida",
+};
+
+const CONSIGNMENT_STATUS_TONE: Record<string, StatusTone> = {
+  ACTIVE: "success",
+  PARTIALLY_SETTLED: "warning",
+  SETTLED: "success",
+  RETURNED: "danger",
+  EXPIRED: "danger",
 };
 
 export default async function CustomerDetailPage({
@@ -97,9 +111,9 @@ export default async function CustomerDetailPage({
                     </span>
                     <span className="flex items-center gap-2 text-muted-foreground">
                       {formatCurrency(sale.total.toNumber(), sale.currency)}
-                      <Badge variant={sale.status === "CONFIRMED" ? "default" : "destructive"}>
+                      <StatusBadge tone={SALE_STATUS_TONE[sale.status]}>
                         {SALE_STATUS_LABEL[sale.status]}
-                      </Badge>
+                      </StatusBadge>
                     </span>
                   </Link>
                 </li>
@@ -125,7 +139,9 @@ export default async function CustomerDetailPage({
                     className="flex items-center justify-between text-sm hover:underline"
                   >
                     <span>{productTitle(consignment.inventoryUnit.product)}</span>
-                    <Badge variant="secondary">{CONSIGNMENT_STATUS_LABEL[consignment.status]}</Badge>
+                    <StatusBadge tone={CONSIGNMENT_STATUS_TONE[consignment.status]}>
+                      {CONSIGNMENT_STATUS_LABEL[consignment.status]}
+                    </StatusBadge>
                   </Link>
                 </li>
               ))}

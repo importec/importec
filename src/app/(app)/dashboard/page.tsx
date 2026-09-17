@@ -1,7 +1,7 @@
 import { getDashboardData } from "@/server/queries/dashboard";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { formatNumber, formatUsd, formatCurrency, CATEGORY_LABELS } from "@/lib/format";
 import { requireSession } from "@/lib/auth/session";
 import { can } from "@/lib/auth/permissions";
@@ -33,6 +33,13 @@ export default async function DashboardPage() {
 
   const maxCategoryCount = Math.max(1, ...data.categoryBreakdown.map(([, count]) => count));
 
+  const heroSales = data.salesThisMonth.reduce(
+    (best, row) => (best === null || row.total > best.total ? row : best),
+    null as (typeof data.salesThisMonth)[number] | null,
+  );
+  const heroMargin =
+    heroSales && heroSales.total > 0 ? (heroSales.profit / heroSales.total) * 100 : null;
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -44,17 +51,39 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
+          size="hero"
+          label="Ventas del mes"
+          value={formatSalesTotal(data.salesThisMonth)}
+          trendPct={heroSales?.trendPct ?? null}
+          hint={
+            showFinancials && heroMargin != null
+              ? `${formatNumber(salesCount(data.salesThisMonth))} operaciones · margen ${heroMargin.toFixed(1)}%`
+              : `${formatNumber(salesCount(data.salesThisMonth))} operacion${salesCount(data.salesThisMonth) === 1 ? "" : "es"} vs. mes anterior`
+          }
+          icon={CalendarDays}
+        />
+        <KpiCard
           label="Ventas de hoy"
           value={formatSalesTotal(data.salesToday)}
           hint={`${formatNumber(salesCount(data.salesToday))} operacion${salesCount(data.salesToday) === 1 ? "" : "es"}`}
           icon={ShoppingCart}
         />
-        <KpiCard
-          label="Ventas del mes"
-          value={formatSalesTotal(data.salesThisMonth)}
-          hint={`${formatNumber(salesCount(data.salesThisMonth))} operacion${salesCount(data.salesThisMonth) === 1 ? "" : "es"}`}
-          icon={CalendarDays}
-        />
+        {showFinancials ? (
+          <KpiCard
+            label="Ganancia potencial"
+            value={formatUsd(data.potentialProfit)}
+            tone="positive"
+            hint="Si se vende todo el stock propio a precio de lista"
+            icon={TrendingUp}
+          />
+        ) : (
+          <KpiCard
+            label="Stock consignado"
+            value={formatUsd(data.consignedValue)}
+            hint="Valor de lista de equipos de terceros"
+            icon={Users2}
+          />
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -64,7 +93,7 @@ export default async function DashboardPage() {
           hint={`${formatNumber(data.ownedUnitsCount)} propias · ${formatNumber(data.consignedUnitsCount)} consignadas`}
           icon={Package}
         />
-        {showFinancials ? (
+        {showFinancials && (
           <>
             <KpiCard
               label="Capital invertido"
@@ -78,21 +107,7 @@ export default async function DashboardPage() {
               hint="Si se vende todo el stock propio a precio de lista"
               icon={TrendingUp}
             />
-            <KpiCard
-              label="Ganancia potencial"
-              value={formatUsd(data.potentialProfit)}
-              tone="positive"
-              hint="Valor de venta menos capital invertido"
-              icon={TrendingUp}
-            />
           </>
-        ) : (
-          <KpiCard
-            label="Stock consignado"
-            value={formatUsd(data.consignedValue)}
-            hint="Valor de lista de equipos de terceros"
-            icon={Users2}
-          />
         )}
       </div>
 
@@ -111,13 +126,13 @@ export default async function DashboardPage() {
                     <span className="w-28 shrink-0 text-sm">
                       {CATEGORY_LABELS[category] ?? category}
                     </span>
-                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
                       <div
-                        className="h-full rounded-full bg-foreground"
+                        className="h-full rounded-full bg-primary"
                         style={{ width: `${(count / maxCategoryCount) * 100}%` }}
                       />
                     </div>
-                    <span className="w-8 shrink-0 text-right text-sm text-muted-foreground">
+                    <span className="w-8 shrink-0 text-right text-sm tabular-nums text-muted-foreground">
                       {count}
                     </span>
                   </li>
@@ -130,7 +145,7 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <AlertTriangle className="size-4 text-amber-500" />
+              <AlertTriangle className="size-4 text-warning" />
               Stock sin rotar (+45 dias)
             </CardTitle>
           </CardHeader>
@@ -143,8 +158,10 @@ export default async function DashboardPage() {
               <ul className="space-y-2">
                 {data.staleUnits.map((unit) => (
                   <li key={unit.id} className="flex items-center justify-between text-sm">
-                    <span>{unit.title}</span>
-                    <Badge variant="secondary">{unit.days} dias</Badge>
+                    <span className="truncate pr-3">{unit.title}</span>
+                    <StatusBadge tone="warning" className="shrink-0">
+                      {unit.days} dias
+                    </StatusBadge>
                   </li>
                 ))}
               </ul>

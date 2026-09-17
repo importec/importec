@@ -10,6 +10,9 @@ function startOfDay(date: Date) {
 function startOfMonth(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), 1);
 }
+function startOfPrevMonth(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth() - 1, 1);
+}
 
 export async function getDashboardData() {
   const now = new Date();
@@ -21,6 +24,7 @@ export async function getDashboardData() {
     totalAvailable,
     salesToday,
     salesThisMonth,
+    salesLastMonth,
     stockLots,
   ] = await Promise.all([
       prisma.inventoryUnit.aggregate({
@@ -58,6 +62,15 @@ export async function getDashboardData() {
         by: ["currency"],
         where: { status: "CONFIRMED", createdAt: { gte: startOfMonth(now) } },
         _sum: { total: true, profitTotal: true },
+        _count: true,
+      }),
+      prisma.sale.groupBy({
+        by: ["currency"],
+        where: {
+          status: "CONFIRMED",
+          createdAt: { gte: startOfPrevMonth(now), lt: startOfMonth(now) },
+        },
+        _sum: { total: true },
         _count: true,
       }),
       prisma.stockLot.findMany({
@@ -102,9 +115,18 @@ export async function getDashboardData() {
       profit: row._sum.profitTotal?.toNumber() ?? 0,
     }));
 
+  const lastMonthByCurrency = new Map(
+    salesLastMonth.map((row) => [row.currency, row._sum.total?.toNumber() ?? 0]),
+  );
+  const salesThisMonthWithTrend = toSalesSummary(salesThisMonth).map((row) => {
+    const previous = lastMonthByCurrency.get(row.currency);
+    const trendPct = previous && previous > 0 ? ((row.total - previous) / previous) * 100 : null;
+    return { ...row, trendPct };
+  });
+
   return {
     salesToday: toSalesSummary(salesToday),
-    salesThisMonth: toSalesSummary(salesThisMonth),
+    salesThisMonth: salesThisMonthWithTrend,
     investedCapital,
     potentialRevenue,
     potentialProfit: potentialRevenue - investedCapital,

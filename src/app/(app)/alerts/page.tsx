@@ -3,7 +3,7 @@ import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { requireSession } from "@/lib/auth/session";
 import { getAlerts } from "@/server/queries/alerts";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 export default async function AlertsPage() {
   await requireSession();
@@ -32,15 +32,15 @@ export default async function AlertsPage() {
               <Card className="transition-colors hover:bg-accent">
                 <CardContent className="flex items-start gap-3 py-4">
                   <AlertTriangle
-                    className={`mt-0.5 size-4 shrink-0 ${alert.severity === "critical" ? "text-destructive" : "text-amber-500"}`}
+                    className={`mt-0.5 size-4 shrink-0 ${alert.severity === "critical" ? "text-destructive" : "text-warning"}`}
                   />
                   <div className="flex-1">
                     <p className="text-sm font-medium">{alert.title}</p>
                     <p className="text-sm text-muted-foreground">{alert.detail}</p>
                   </div>
-                  <Badge variant={alert.severity === "critical" ? "destructive" : "secondary"}>
+                  <StatusBadge tone={alert.severity === "critical" ? "danger" : "warning"}>
                     {alert.severity === "critical" ? "Urgente" : "Atencion"}
-                  </Badge>
+                  </StatusBadge>
                 </CardContent>
               </Card>
             </Link>

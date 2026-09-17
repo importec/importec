@@ -5,7 +5,7 @@ import { prisma } from "@/server/db";
 import { requireSession } from "@/lib/auth/session";
 import { can } from "@/lib/auth/permissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -15,7 +15,7 @@ import {
   formatUsd,
   productTitle,
 } from "@/lib/format";
-import { STATUS_TRANSITIONS } from "@/lib/inventory/status";
+import { STATUS_TONE, STATUS_TRANSITIONS } from "@/lib/inventory/status";
 import { StatusActions } from "./status-actions";
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
@@ -68,7 +68,7 @@ export default async function InventoryUnitPage({
           <h1 className="text-xl font-semibold tracking-tight">
             {productTitle(unit.product)}
           </h1>
-          <Badge>{STATUS_LABELS[unit.status]}</Badge>
+          <StatusBadge tone={STATUS_TONE[unit.status]}>{STATUS_LABELS[unit.status]}</StatusBadge>
         </div>
         <p className="text-sm text-muted-foreground">
           {CATEGORY_LABELS[unit.product.category]}
@@ -103,7 +103,7 @@ export default async function InventoryUnitPage({
               <Field
                 label="Margen"
                 value={
-                  <span className={margin >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}>
+                  <span className={margin >= 0 ? "text-success" : "text-destructive"}>
                     {formatUsd(margin)}
                   </span>
                 }

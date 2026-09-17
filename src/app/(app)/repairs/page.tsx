@@ -4,7 +4,7 @@ import { prisma } from "@/server/db";
 import { requireSession } from "@/lib/auth/session";
 import { can } from "@/lib/auth/permissions";
 import { buttonVariants } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge, type StatusTone } from "@/components/ui/status-badge";
 import {
   Table,
   TableBody,
@@ -18,17 +18,17 @@ import { REPAIR_STATUS_LABELS } from "@/lib/repairs/status";
 
 const OPEN_STATUSES = ["RECEIVED", "DIAGNOSING", "QUOTE_SENT", "AWAITING_APPROVAL", "APPROVED", "IN_PROGRESS", "AWAITING_PART"];
 
-const STATUS_VARIANT: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
-  RECEIVED: "secondary",
-  DIAGNOSING: "secondary",
-  QUOTE_SENT: "secondary",
-  AWAITING_APPROVAL: "secondary",
-  APPROVED: "default",
-  IN_PROGRESS: "default",
-  AWAITING_PART: "destructive",
-  DONE: "default",
-  DELIVERED: "outline",
-  CANCELLED: "destructive",
+const STATUS_TONE: Record<string, StatusTone> = {
+  RECEIVED: "info",
+  DIAGNOSING: "warning",
+  QUOTE_SENT: "warning",
+  AWAITING_APPROVAL: "warning",
+  APPROVED: "success",
+  IN_PROGRESS: "warning",
+  AWAITING_PART: "warning",
+  DONE: "success",
+  DELIVERED: "success",
+  CANCELLED: "danger",
 };
 
 export default async function RepairsPage() {
@@ -73,9 +73,9 @@ export default async function RepairsPage() {
             >
               <div className="flex items-start justify-between gap-2">
                 <span className="min-w-0 flex-1 truncate font-medium">{customerName(repair.customer)}</span>
-                <Badge variant={STATUS_VARIANT[repair.status]} className="shrink-0">
+                <StatusBadge tone={STATUS_TONE[repair.status]} className="shrink-0">
                   {REPAIR_STATUS_LABELS[repair.status]}
-                </Badge>
+                </StatusBadge>
               </div>
               <p className="mt-0.5 truncate text-xs text-muted-foreground">{repair.deviceDescription}</p>
               <p className="truncate text-xs text-muted-foreground">{repair.reportedIssue}</p>
@@ -130,7 +130,7 @@ export default async function RepairsPage() {
                     {repair.assignedTechUser?.name ?? "Sin asignar"}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={STATUS_VARIANT[repair.status]}>{REPAIR_STATUS_LABELS[repair.status]}</Badge>
+                    <StatusBadge tone={STATUS_TONE[repair.status]}>{REPAIR_STATUS_LABELS[repair.status]}</StatusBadge>
                   </TableCell>
                 </TableRow>
               ))

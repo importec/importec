@@ -111,7 +111,7 @@ export default async function FinancePage() {
                       {movement.createdAt.toLocaleDateString("es-AR")}
                     </span>
                     <span
-                      className={`shrink-0 inline-flex items-center gap-1 font-medium ${movement.type === "IN" ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}
+                      className={`shrink-0 inline-flex items-center gap-1 font-medium ${movement.type === "IN" ? "text-success" : "text-destructive"}`}
                     >
                       {movement.type === "IN" ? (
                         <ArrowDownCircle className="size-3.5" />
@@ -161,7 +161,7 @@ export default async function FinancePage() {
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{movement.description ?? "—"}</TableCell>
                       <TableCell
-                        className={`text-right font-medium ${movement.type === "IN" ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}
+                        className={`text-right font-medium ${movement.type === "IN" ? "text-success" : "text-destructive"}`}
                       >
                         <span className="inline-flex items-center gap-1">
                           {movement.type === "IN" ? (

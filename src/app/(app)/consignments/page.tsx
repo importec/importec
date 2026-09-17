@@ -4,7 +4,7 @@ import { prisma } from "@/server/db";
 import { requireSession } from "@/lib/auth/session";
 import { can } from "@/lib/auth/permissions";
 import { buttonVariants } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge, type StatusTone } from "@/components/ui/status-badge";
 import {
   Table,
   TableBody,
@@ -23,12 +23,12 @@ const STATUS_LABEL: Record<string, string> = {
   EXPIRED: "Vencida",
 };
 
-const STATUS_VARIANT: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
-  ACTIVE: "default",
-  PARTIALLY_SETTLED: "secondary",
-  SETTLED: "outline",
-  RETURNED: "destructive",
-  EXPIRED: "destructive",
+const STATUS_TONE: Record<string, StatusTone> = {
+  ACTIVE: "success",
+  PARTIALLY_SETTLED: "warning",
+  SETTLED: "success",
+  RETURNED: "danger",
+  EXPIRED: "danger",
 };
 
 export default async function ConsignmentsPage() {
@@ -75,9 +75,9 @@ export default async function ConsignmentsPage() {
                 <span className="min-w-0 flex-1 truncate font-medium">
                   {productTitle(consignment.inventoryUnit.product)}
                 </span>
-                <Badge variant={STATUS_VARIANT[consignment.status]} className="shrink-0">
+                <StatusBadge tone={STATUS_TONE[consignment.status]} className="shrink-0">
                   {STATUS_LABEL[consignment.status]}
-                </Badge>
+                </StatusBadge>
               </div>
               <p className="mt-0.5 truncate text-xs text-muted-foreground">
                 {customerName(consignment.ownerCustomer)} · {consignment.commissionPct.toNumber()}%
@@ -125,7 +125,7 @@ export default async function ConsignmentsPage() {
                     {consignment.commissionPct.toNumber()}%
                   </TableCell>
                   <TableCell>
-                    <Badge variant={STATUS_VARIANT[consignment.status]}>{STATUS_LABEL[consignment.status]}</Badge>
+                    <StatusBadge tone={STATUS_TONE[consignment.status]}>{STATUS_LABEL[consignment.status]}</StatusBadge>
                   </TableCell>
                   <TableCell className="text-right font-medium">
                     {formatUsd(consignment.inventoryUnit.listPrice.toNumber())}

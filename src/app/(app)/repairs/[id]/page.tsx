@@ -149,7 +149,7 @@ export default async function RepairDetailPage({
             {showCosts && (
               <div>
                 <p className="text-xs text-muted-foreground">Ganancia</p>
-                <p className="font-medium text-emerald-600 dark:text-emerald-400">{formatUsd(profit)}</p>
+                <p className="font-medium text-success">{formatUsd(profit)}</p>
               </div>
             )}
           </CardContent>
