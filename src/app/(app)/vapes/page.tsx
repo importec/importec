@@ -15,6 +15,9 @@ import {
 import { EditableNumber } from "@/components/inventory/editable-number";
 import { updateVapeProductField } from "./actions";
 import { AddStockButton } from "./add-stock-button";
+import { RemoveStockButton } from "./remove-stock-button";
+import { DeleteProductButton } from "./delete-product-button";
+import { VapeCurrencySelect } from "./vape-currency-select";
 
 export default async function VapesPage() {
   const session = await requireSession();
@@ -98,8 +101,13 @@ export default async function VapesPage() {
                   )}
                 </div>
                 {canManage && (
-                  <div className="mt-2 flex justify-end">
-                    <AddStockButton productId={product.id} />
+                  <div className="mt-2 flex items-center justify-between border-t pt-2">
+                    <VapeCurrencySelect productId={product.id} currency={product.currency} />
+                    <div className="flex items-center gap-1">
+                      <AddStockButton productId={product.id} />
+                      <RemoveStockButton productId={product.id} />
+                      <DeleteProductButton productId={product.id} productName={product.name} />
+                    </div>
                   </div>
                 )}
               </div>
@@ -114,17 +122,21 @@ export default async function VapesPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Producto</TableHead>
+              {canManage && <TableHead>Moneda</TableHead>}
               <TableHead className="text-right">Stock propio</TableHead>
               <TableHead className="text-right">En manos de vendedores</TableHead>
               {showCosts && <TableHead className="text-right">Costo</TableHead>}
               <TableHead className="text-right">Venta</TableHead>
-              {canManage && <TableHead className="w-10" />}
+              {canManage && <TableHead className="text-right">Acciones</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {products.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={showCosts ? 6 : 5} className="h-40 text-center">
+                <TableCell
+                  colSpan={4 + (canManage ? 2 : 0) + (showCosts ? 1 : 0)}
+                  className="h-40 text-center"
+                >
                   <div className="flex flex-col items-center gap-2 text-muted-foreground">
                     <Cigarette className="size-8" />
                     <p>Todavia no hay productos de vapes cargados.</p>
@@ -140,6 +152,11 @@ export default async function VapesPage() {
                       <p className="font-medium">{product.name}</p>
                       {product.flavor && <p className="text-xs text-muted-foreground">{product.flavor}</p>}
                     </TableCell>
+                    {canManage && (
+                      <TableCell>
+                        <VapeCurrencySelect productId={product.id} currency={product.currency} />
+                      </TableCell>
+                    )}
                     <TableCell className="text-right font-medium">{product.stockQuantity}</TableCell>
                     <TableCell className="text-right text-muted-foreground">{withSellers}</TableCell>
                     {showCosts && (
@@ -159,8 +176,12 @@ export default async function VapesPage() {
                       />
                     </TableCell>
                     {canManage && (
-                      <TableCell>
-                        <AddStockButton productId={product.id} />
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <AddStockButton productId={product.id} />
+                          <RemoveStockButton productId={product.id} />
+                          <DeleteProductButton productId={product.id} productName={product.name} />
+                        </div>
                       </TableCell>
                     )}
                   </TableRow>

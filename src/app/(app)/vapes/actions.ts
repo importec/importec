@@ -68,6 +68,25 @@ export async function updateVapeProductField(
   revalidatePath("/vapes");
 }
 
+export async function updateVapeProductCurrency(
+  productId: string,
+  currency: string,
+): Promise<PriceEditState> {
+  const session = await requireSession();
+  if (!can(session.role, "MANAGE_VAPES")) {
+    return { error: "No tenes permiso para editar precios." };
+  }
+
+  const parsed = asEnum(Object.values(Currency)).safeParse(currency);
+  if (!parsed.success) return { error: "Moneda invalida." };
+
+  const product = await prisma.vapeProduct.findUnique({ where: { id: productId } });
+  if (!product) return { error: "El producto no existe." };
+
+  await prisma.vapeProduct.update({ where: { id: productId }, data: { currency: parsed.data } });
+  revalidatePath("/vapes");
+}
+
 const AddStockSchema = z.object({
   quantity: z.coerce.number().int().positive(),
 });
@@ -90,6 +109,62 @@ export async function addCentralStock(
   await prisma.vapeProduct.update({
     where: { id: productId },
     data: { stockQuantity: { increment: parsed.data.quantity } },
+  });
+
+  revalidatePath("/vapes");
+}
+
+export async function removeCentralStock(
+  productId: string,
+  _prevState: PriceEditState,
+  formData: FormData,
+): Promise<PriceEditState> {
+  const session = await requireSession();
+  if (!can(session.role, "MANAGE_VAPES")) {
+    return { error: "No tenes permiso para quitar stock." };
+  }
+
+  const parsed = AddStockSchema.safeParse(Object.fromEntries(formData.entries()));
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Ingresa una cantidad valida." };
+  }
+
+  const product = await prisma.vapeProduct.findUnique({ where: { id: productId } });
+  if (!product) return { error: "El producto no existe." };
+  if (product.stockQuantity < parsed.data.quantity) {
+    return { error: `Solo hay ${product.stockQuantity} unidades en stock propio.` };
+  }
+
+  await prisma.vapeProduct.update({
+    where: { id: productId },
+    data: { stockQuantity: { decrement: parsed.data.quantity } },
+  });
+
+  revalidatePath("/vapes");
+}
+
+export async function deleteVapeProduct(productId: string): Promise<PriceEditState> {
+  const session = await requireSession();
+  if (!can(session.role, "MANAGE_VAPES")) {
+    return { error: "No tenes permiso para eliminar productos." };
+  }
+
+  const product = await prisma.vapeProduct.findUnique({
+    where: { id: productId },
+    include: { sellerStocks: true },
+  });
+  if (!product) return { error: "El producto no existe." };
+
+  const withSellers = product.sellerStocks.reduce((sum, s) => sum + s.quantity, 0);
+  if (product.stockQuantity > 0 || withSellers > 0) {
+    return {
+      error: "No se puede eliminar: todavia hay stock propio o en manos de vendedores. Vaciá el stock primero.",
+    };
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.vapeSellerStock.deleteMany({ where: { productId } });
+    await tx.vapeProduct.delete({ where: { id: productId } });
   });
 
   revalidatePath("/vapes");
