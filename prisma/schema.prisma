@@ -1,0 +1,650 @@
+// Prisma schema — Sistema de gestion Apple
+// Ver la propuesta de arquitectura (doc "Sistema de Gestion Apple") para el razonamiento detras de cada entidad.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Usuarios, roles y auditoria
+// ---------------------------------------------------------------------------
+
+enum UserRole {
+  ADMIN
+  SALES
+  TECH
+  CASHIER
+  SUPERVISOR
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         UserRole
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  auditLogs           AuditLog[]
+  inventoryEvents      InventoryUnitStatusEvent[]
+  repairEventsChanged  RepairStatusEvent[]
+  assignedRepairs      Repair[]                   @relation("AssignedTech")
+  soldSales            Sale[]                     @relation("SoldBy")
+  createdQuotes        Quote[]
+  cashMovements        CashMovement[]
+  expenses             Expense[]
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  action     String
+  entityType String
+  entityId   String?
+  before     Json?
+  after      Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Catalogo e inventario — Product (SKU) vs InventoryUnit (unidad fisica)
+// ---------------------------------------------------------------------------
+
+enum ProductCategory {
+  IPHONE
+  MAC
+  IPAD
+  WATCH
+  AIRPODS
+  ACCESSORY
+  OTHER
+}
+
+model Location {
+  id        String   @id @default(cuid())
+  name      String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  inventoryUnits InventoryUnit[]
+  stockLots      StockLot[]
+}
+
+model Product {
+  id         String          @id @default(cuid())
+  category   ProductCategory
+  brand      String
+  model      String
+  variant    String?
+  storageGb  Int?
+  color      String?
+  isSerialized Boolean       @default(true)
+  listPrice  Decimal?        @db.Decimal(12, 2)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  inventoryUnits InventoryUnit[]
+  stockLots      StockLot[]
+  quoteItems     QuoteItem[]
+  purchaseItems  PurchaseItem[]
+  repairParts    RepairPart[]
+
+  @@index([category, brand, model])
+}
+
+enum ConditionGrade {
+  NEW
+  LIKE_NEW
+  GOOD
+  FAIR
+  POOR
+}
+
+enum InventoryUnitStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+  IN_REVIEW
+  IN_REPAIR
+  RETURNED
+  DISPOSED
+}
+
+enum OwnerType {
+  COMPANY
+  CONSIGNMENT
+}
+
+model InventoryUnit {
+  id             String               @id @default(cuid())
+  productId      String
+  product        Product              @relation(fields: [productId], references: [id])
+  locationId     String
+  location       Location             @relation(fields: [locationId], references: [id])
+  imei           String?              @unique
+  serialNumber   String?              @unique
+  condition      ConditionGrade
+  batteryPct     Int?
+  isNew          Boolean              @default(false)
+  cost           Decimal              @db.Decimal(12, 2)
+  listPrice      Decimal              @db.Decimal(12, 2)
+  minPrice       Decimal?             @db.Decimal(12, 2)
+  status         InventoryUnitStatus  @default(AVAILABLE)
+  ownerType      OwnerType            @default(COMPANY)
+  notes          String?
+  photos         Json?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  consignment       Consignment?
+  statusHistory     InventoryUnitStatusEvent[]
+  saleItems         SaleItem[]
+  reservations      Reservation[]
+  quoteItems        QuoteItem[]
+  tradeInReceived   TradeIn?                   @relation("ReceivedUnit")
+  purchaseItem      PurchaseItem?
+
+  @@index([status])
+  @@index([ownerType])
+}
+
+model InventoryUnitStatusEvent {
+  id              String               @id @default(cuid())
+  inventoryUnitId String
+  inventoryUnit   InventoryUnit        @relation(fields: [inventoryUnitId], references: [id])
+  fromStatus      InventoryUnitStatus?
+  toStatus        InventoryUnitStatus
+  changedByUserId String?
+  changedByUser   User?                @relation(fields: [changedByUserId], references: [id])
+  note            String?
+  createdAt       DateTime             @default(now())
+
+  @@index([inventoryUnitId])
+}
+
+model StockLot {
+  id         String   @id @default(cuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+  locationId String
+  location   Location @relation(fields: [locationId], references: [id])
+  quantity   Int      @default(0)
+  avgCost    Decimal  @db.Decimal(12, 2)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  saleItems     SaleItem[]
+  repairParts   RepairPart[]
+
+  @@unique([productId, locationId])
+}
+
+// ---------------------------------------------------------------------------
+// Clientes y proveedores
+// ---------------------------------------------------------------------------
+
+model Customer {
+  id        String   @id @default(cuid())
+  firstName String
+  lastName  String
+  phone     String?
+  whatsapp  String?
+  email     String?
+  docId     String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sales         Sale[]
+  quotes        Quote[]
+  reservations  Reservation[]
+  consignments  Consignment[]
+  repairs       Repair[]
+
+  @@index([lastName, firstName])
+}
+
+model Supplier {
+  id          String   @id @default(cuid())
+  name        String
+  contactName String?
+  phone       String?
+  email       String?
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  purchases Purchase[]
+}
+
+// ---------------------------------------------------------------------------
+// Compras
+// ---------------------------------------------------------------------------
+
+enum PurchaseStatus {
+  ORDERED
+  RECEIVED
+  INVOICED
+  PAID
+  CANCELLED
+}
+
+enum Currency {
+  ARS
+  USD
+}
+
+model Purchase {
+  id         String         @id @default(cuid())
+  supplierId String
+  supplier   Supplier       @relation(fields: [supplierId], references: [id])
+  status     PurchaseStatus @default(ORDERED)
+  currency   Currency
+  notes      String?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  items PurchaseItem[]
+}
+
+model PurchaseItem {
+  id              String         @id @default(cuid())
+  purchaseId      String
+  purchase        Purchase       @relation(fields: [purchaseId], references: [id])
+  productId       String
+  product         Product        @relation(fields: [productId], references: [id])
+  quantity        Int
+  unitCost        Decimal        @db.Decimal(12, 2)
+  inventoryUnitId String?        @unique
+  inventoryUnit   InventoryUnit? @relation(fields: [inventoryUnitId], references: [id])
+}
+
+// ---------------------------------------------------------------------------
+// Presupuestos, reservas y ventas
+// ---------------------------------------------------------------------------
+
+enum QuoteStatus {
+  OPEN
+  CONVERTED
+  EXPIRED
+  CANCELLED
+}
+
+model Quote {
+  id              String      @id @default(cuid())
+  customerId      String?
+  customer        Customer?   @relation(fields: [customerId], references: [id])
+  createdByUserId String
+  createdByUser   User        @relation(fields: [createdByUserId], references: [id])
+  status          QuoteStatus @default(OPEN)
+  currency        Currency
+  expiresAt       DateTime?
+  createdAt       DateTime    @default(now())
+
+  items QuoteItem[]
+}
+
+model QuoteItem {
+  id              String         @id @default(cuid())
+  quoteId         String
+  quote           Quote          @relation(fields: [quoteId], references: [id])
+  productId       String?
+  product         Product?       @relation(fields: [productId], references: [id])
+  inventoryUnitId String?
+  inventoryUnit   InventoryUnit? @relation(fields: [inventoryUnitId], references: [id])
+  description     String
+  unitPrice       Decimal        @db.Decimal(12, 2)
+  quantity        Int            @default(1)
+}
+
+enum ReservationStatus {
+  ACTIVE
+  CONVERTED
+  EXPIRED
+  CANCELLED
+}
+
+model Reservation {
+  id              String            @id @default(cuid())
+  customerId      String
+  customer        Customer          @relation(fields: [customerId], references: [id])
+  inventoryUnitId String
+  inventoryUnit   InventoryUnit     @relation(fields: [inventoryUnitId], references: [id])
+  depositAmount   Decimal           @db.Decimal(12, 2)
+  currency        Currency
+  expiresAt       DateTime
+  status          ReservationStatus @default(ACTIVE)
+  createdAt       DateTime          @default(now())
+}
+
+enum SaleStatus {
+  CONFIRMED
+  RETURNED
+  CANCELLED
+}
+
+model Sale {
+  id              String     @id @default(cuid())
+  customerId      String?
+  customer        Customer?  @relation(fields: [customerId], references: [id])
+  currency        Currency
+  exchangeRateId  String?
+  exchangeRate    ExchangeRate? @relation(fields: [exchangeRateId], references: [id])
+  subtotal        Decimal    @db.Decimal(12, 2)
+  discount        Decimal    @default(0) @db.Decimal(12, 2)
+  total           Decimal    @db.Decimal(12, 2)
+  costTotal       Decimal    @db.Decimal(12, 2)
+  profitTotal     Decimal    @db.Decimal(12, 2)
+  status          SaleStatus @default(CONFIRMED)
+  soldByUserId    String
+  soldByUser      User       @relation("SoldBy", fields: [soldByUserId], references: [id])
+  createdAt       DateTime   @default(now())
+
+  items    SaleItem[]
+  payments Payment[]
+  tradeIn  TradeIn?
+  warranty Warranty?
+}
+
+model SaleItem {
+  id              String         @id @default(cuid())
+  saleId          String
+  sale            Sale           @relation(fields: [saleId], references: [id])
+  inventoryUnitId String?
+  inventoryUnit   InventoryUnit? @relation(fields: [inventoryUnitId], references: [id])
+  stockLotId      String?
+  stockLot        StockLot?      @relation(fields: [stockLotId], references: [id])
+  quantity        Int            @default(1)
+  unitPrice       Decimal        @db.Decimal(12, 2)
+  unitCost        Decimal        @db.Decimal(12, 2)
+}
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+  CARD
+  TRADE_IN
+  OTHER
+}
+
+model Payment {
+  id             String        @id @default(cuid())
+  saleId         String
+  sale           Sale          @relation(fields: [saleId], references: [id])
+  method         PaymentMethod
+  currency       Currency
+  amount         Decimal       @db.Decimal(12, 2)
+  exchangeRateId String?
+  exchangeRate   ExchangeRate? @relation(fields: [exchangeRateId], references: [id])
+  cashAccountId  String?
+  cashAccount    CashAccount?  @relation(fields: [cashAccountId], references: [id])
+  createdAt      DateTime      @default(now())
+}
+
+model TradeIn {
+  id                    String        @id @default(cuid())
+  saleId                String        @unique
+  sale                  Sale          @relation(fields: [saleId], references: [id])
+  receivedInventoryUnitId String      @unique
+  receivedInventoryUnit  InventoryUnit @relation("ReceivedUnit", fields: [receivedInventoryUnitId], references: [id])
+  appraisedValue        Decimal       @db.Decimal(12, 2)
+  currency              Currency
+  conditionChecklist    Json?
+  createdAt             DateTime      @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Consignacion
+// ---------------------------------------------------------------------------
+
+enum ConsignmentStatus {
+  ACTIVE
+  PARTIALLY_SETTLED
+  SETTLED
+  RETURNED
+  EXPIRED
+}
+
+model Consignment {
+  id              String            @id @default(cuid())
+  inventoryUnitId String            @unique
+  inventoryUnit   InventoryUnit     @relation(fields: [inventoryUnitId], references: [id])
+  ownerCustomerId String
+  ownerCustomer   Customer          @relation(fields: [ownerCustomerId], references: [id])
+  commissionPct   Decimal           @db.Decimal(5, 2)
+  minPrice        Decimal?          @db.Decimal(12, 2)
+  termStartAt     DateTime          @default(now())
+  termEndAt       DateTime?
+  status          ConsignmentStatus @default(ACTIVE)
+  createdAt       DateTime          @default(now())
+
+  settlements Settlement[]
+}
+
+model Settlement {
+  id            String      @id @default(cuid())
+  consignmentId String
+  consignment   Consignment @relation(fields: [consignmentId], references: [id])
+  amount        Decimal     @db.Decimal(12, 2)
+  currency      Currency
+  settledAt     DateTime    @default(now())
+  notes         String?
+}
+
+// ---------------------------------------------------------------------------
+// Servicio tecnico
+// ---------------------------------------------------------------------------
+
+enum RepairStatus {
+  RECEIVED
+  DIAGNOSING
+  QUOTE_SENT
+  AWAITING_APPROVAL
+  APPROVED
+  IN_PROGRESS
+  AWAITING_PART
+  DONE
+  DELIVERED
+  CANCELLED
+}
+
+model Repair {
+  id                  String       @id @default(cuid())
+  customerId          String
+  customer            Customer     @relation(fields: [customerId], references: [id])
+  deviceDescription   String
+  imei                String?
+  serialNumber        String?
+  reportedIssue       String
+  receivedCondition   String?
+  photos              Json?
+  accessoriesReceived String?
+  diagnosis           String?
+  status              RepairStatus @default(RECEIVED)
+  assignedTechUserId  String?
+  assignedTechUser    User?        @relation("AssignedTech", fields: [assignedTechUserId], references: [id])
+  laborCost           Decimal?     @db.Decimal(12, 2)
+  partsCost           Decimal?     @db.Decimal(12, 2)
+  finalPrice          Decimal?     @db.Decimal(12, 2)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  deliveredAt         DateTime?
+
+  statusHistory RepairStatusEvent[]
+  parts         RepairPart[]
+  warranty      Warranty?
+
+  @@index([status])
+}
+
+model RepairStatusEvent {
+  id              String        @id @default(cuid())
+  repairId        String
+  repair          Repair        @relation(fields: [repairId], references: [id])
+  fromStatus      RepairStatus?
+  toStatus        RepairStatus
+  changedByUserId String?
+  changedByUser   User?         @relation(fields: [changedByUserId], references: [id])
+  createdAt       DateTime      @default(now())
+
+  @@index([repairId])
+}
+
+model RepairPart {
+  id         String    @id @default(cuid())
+  repairId   String
+  repair     Repair    @relation(fields: [repairId], references: [id])
+  productId  String?
+  product    Product?  @relation(fields: [productId], references: [id])
+  stockLotId String?
+  stockLot   StockLot? @relation(fields: [stockLotId], references: [id])
+  quantity   Int       @default(1)
+  unitCost   Decimal   @db.Decimal(12, 2)
+}
+
+model Warranty {
+  id        String    @id @default(cuid())
+  startAt   DateTime  @default(now())
+  endAt     DateTime
+  terms     String?
+  saleId    String?   @unique
+  sale      Sale?     @relation(fields: [saleId], references: [id])
+  repairId  String?   @unique
+  repair    Repair?   @relation(fields: [repairId], references: [id])
+  createdAt DateTime  @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Caja y finanzas
+// ---------------------------------------------------------------------------
+
+model ExchangeRate {
+  id        String   @id @default(cuid())
+  date      DateTime @unique
+  usdToArs  Decimal  @db.Decimal(12, 4)
+  createdAt DateTime @default(now())
+
+  sales    Sale[]
+  payments Payment[]
+}
+
+enum CashAccountKind {
+  CASH
+  BANK
+  WALLET
+  OTHER
+}
+
+model CashAccount {
+  id        String          @id @default(cuid())
+  name      String
+  currency  Currency
+  kind      CashAccountKind
+  createdAt DateTime        @default(now())
+
+  movements CashMovement[]
+  expenses  Expense[]
+  payments  Payment[]
+}
+
+enum CashMovementType {
+  IN
+  OUT
+}
+
+enum CashMovementSource {
+  SALE
+  PURCHASE
+  EXPENSE
+  WITHDRAWAL
+  REPAIR
+  CONSIGNMENT_SETTLEMENT
+  OTHER
+}
+
+model CashMovement {
+  id              String              @id @default(cuid())
+  cashAccountId   String
+  cashAccount     CashAccount         @relation(fields: [cashAccountId], references: [id])
+  type            CashMovementType
+  amount          Decimal             @db.Decimal(12, 2)
+  currency        Currency
+  source          CashMovementSource
+  referenceId     String?
+  description     String?
+  createdByUserId String?
+  createdByUser   User?               @relation(fields: [createdByUserId], references: [id])
+  createdAt       DateTime            @default(now())
+
+  @@index([cashAccountId, createdAt])
+}
+
+model ExpenseCategory {
+  id   String @id @default(cuid())
+  name String @unique
+
+  expenses Expense[]
+}
+
+model Expense {
+  id              String          @id @default(cuid())
+  categoryId      String
+  category        ExpenseCategory @relation(fields: [categoryId], references: [id])
+  amount          Decimal         @db.Decimal(12, 2)
+  currency        Currency
+  cashAccountId   String?
+  cashAccount     CashAccount?    @relation(fields: [cashAccountId], references: [id])
+  description     String?
+  createdByUserId String?
+  createdByUser   User?           @relation(fields: [createdByUserId], references: [id])
+  createdAt       DateTime        @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Vapes — linea de negocio aparte: stock propio + stock en manos de vendedores
+// ---------------------------------------------------------------------------
+
+model VapeProduct {
+  id            String   @id @default(cuid())
+  name          String
+  flavor        String?
+  cost          Decimal  @db.Decimal(12, 2)
+  salePrice     Decimal  @db.Decimal(12, 2)
+  stockQuantity Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sellerStocks VapeSellerStock[]
+}
+
+model VapeSeller {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?
+  notes     String?
+  createdAt DateTime @default(now())
+
+  stocks VapeSellerStock[]
+}
+
+model VapeSellerStock {
+  id        String      @id @default(cuid())
+  sellerId  String
+  seller    VapeSeller  @relation(fields: [sellerId], references: [id])
+  productId String
+  product   VapeProduct @relation(fields: [productId], references: [id])
+  quantity  Int         @default(0)
+  updatedAt DateTime    @updatedAt
+
+  @@unique([sellerId, productId])
+}
