@@ -22,6 +22,7 @@ export default async function WhatsappStockPage() {
     batteryPct: unit.batteryPct,
     isNew: unit.isNew,
     listPrice: unit.listPrice.toNumber(),
+    currency: unit.product.currency,
   }));
 
   return (

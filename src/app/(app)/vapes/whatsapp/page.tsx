@@ -16,6 +16,7 @@ export default async function VapeWhatsappPage() {
     flavor: p.flavor,
     stockQuantity: p.stockQuantity,
     salePrice: p.salePrice.toNumber(),
+    currency: p.currency,
   }));
 
   return (

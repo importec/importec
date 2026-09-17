@@ -118,6 +118,7 @@ export const inventoryRouter = router({
             .join(" · "),
           unitPrice: unit.listPrice.toNumber(),
           unitCost: unit.cost.toNumber(),
+          currency: unit.product.currency,
           maxQuantity: 1,
         }));
 
@@ -136,6 +137,7 @@ export const inventoryRouter = router({
           subtitle: `${lot.quantity} en stock · ${lot.location.name}`,
           unitPrice: lot.product.listPrice?.toNumber() ?? 0,
           unitCost: lot.avgCost.toNumber(),
+          currency: lot.product.currency,
           maxQuantity: lot.quantity,
         }));
 

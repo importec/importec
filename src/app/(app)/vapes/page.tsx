@@ -73,6 +73,7 @@ export default async function VapesPage() {
                   <EditableNumber
                     value={product.salePrice.toNumber()}
                     onSave={updateVapeProductField.bind(null, product.id, "salePrice")}
+                    currency={product.currency}
                     className="shrink-0 font-medium"
                   />
                 </div>
@@ -91,6 +92,7 @@ export default async function VapesPage() {
                       <EditableNumber
                         value={product.cost.toNumber()}
                         onSave={updateVapeProductField.bind(null, product.id, "cost")}
+                        currency={product.currency}
                       />
                     </div>
                   )}
@@ -145,6 +147,7 @@ export default async function VapesPage() {
                         <EditableNumber
                           value={product.cost.toNumber()}
                           onSave={updateVapeProductField.bind(null, product.id, "cost")}
+                          currency={product.currency}
                         />
                       </TableCell>
                     )}
@@ -152,6 +155,7 @@ export default async function VapesPage() {
                       <EditableNumber
                         value={product.salePrice.toNumber()}
                         onSave={updateVapeProductField.bind(null, product.id, "salePrice")}
+                        currency={product.currency}
                       />
                     </TableCell>
                     {canManage && (

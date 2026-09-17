@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CustomerPicker, type PickedCustomer } from "@/components/customers/customer-picker";
-import { ItemPicker } from "./item-picker";
+import { ItemPicker, type PickedItem } from "./item-picker";
 import { formatCurrency } from "@/lib/format";
 import { CATEGORY_LABELS, CONDITION_LABELS } from "@/lib/format";
 import { ProductCategory, ConditionGrade } from "@/generated/prisma/enums";
@@ -86,6 +86,36 @@ export function SaleWizard({
     },
     onError: (error) => toast.error(error.message),
   });
+
+  function convertToSaleCurrency(amount: number, from: "USD" | "ARS") {
+    if (from === currency) return amount;
+    if (!usdToArs) return null;
+    return from === "USD" ? amount * usdToArs : amount / usdToArs;
+  }
+
+  function handleAddItem(item: PickedItem) {
+    const convertedPrice = convertToSaleCurrency(item.unitPrice, item.currency);
+    const convertedCost = convertToSaleCurrency(item.unitCost, item.currency);
+    if (convertedPrice === null || convertedCost === null) {
+      toast.error(
+        `Este producto esta en ${CURRENCY_LABELS[item.currency]} y no hay tipo de cambio cargado para convertir a ${CURRENCY_LABELS[currency]}.`,
+      );
+      return;
+    }
+    setItems((prev) => [
+      ...prev,
+      {
+        kind: item.kind,
+        id: item.id,
+        title: item.title,
+        subtitle: item.subtitle,
+        unitPrice: convertedPrice,
+        unitCost: convertedCost,
+        quantity: 1,
+        maxQuantity: item.maxQuantity,
+      },
+    ]);
+  }
 
   function updateItemQuantity(index: number, quantity: number) {
     setItems((prev) =>
@@ -181,7 +211,7 @@ export function SaleWizard({
           </Select>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
-          <ItemPicker onAdd={(item) => setItems((prev) => [...prev, item])} />
+          <ItemPicker onAdd={handleAddItem} />
           {items.map((item, index) => (
             <div key={`${item.kind}-${item.id}-${index}`} className="flex flex-wrap items-center gap-3 rounded-md border p-3">
               <div className="min-w-0 flex-1 basis-full sm:basis-auto">

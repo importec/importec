@@ -16,10 +16,16 @@ import {
 } from "lucide-react";
 
 type SalesSummaryRow = { currency: "USD" | "ARS"; count: number; total: number; profit: number };
+type MoneyRow = { currency: "USD" | "ARS"; value: number };
 
 function formatSalesTotal(rows: SalesSummaryRow[]) {
   if (rows.length === 0) return formatUsd(0);
   return rows.map((row) => formatCurrency(row.total, row.currency)).join(" + ");
+}
+
+function formatMoneyRows(rows: MoneyRow[]) {
+  if (rows.length === 0) return formatUsd(0);
+  return rows.map((row) => formatCurrency(row.value, row.currency)).join(" + ");
 }
 
 function salesCount(rows: SalesSummaryRow[]) {
@@ -71,7 +77,7 @@ export default async function DashboardPage() {
         {showFinancials ? (
           <KpiCard
             label="Ganancia potencial"
-            value={formatUsd(data.potentialProfit)}
+            value={formatMoneyRows(data.potentialProfit)}
             tone="positive"
             hint="Si se vende todo el stock propio a precio de lista"
             icon={TrendingUp}
@@ -79,7 +85,7 @@ export default async function DashboardPage() {
         ) : (
           <KpiCard
             label="Stock consignado"
-            value={formatUsd(data.consignedValue)}
+            value={formatMoneyRows(data.consignedValue)}
             hint="Valor de lista de equipos de terceros"
             icon={Users2}
           />
@@ -97,13 +103,13 @@ export default async function DashboardPage() {
           <>
             <KpiCard
               label="Capital invertido"
-              value={formatUsd(data.investedCapital)}
+              value={formatMoneyRows(data.investedCapital)}
               hint="Costo del stock propio activo"
               icon={Boxes}
             />
             <KpiCard
               label="Valor de venta potencial"
-              value={formatUsd(data.potentialRevenue)}
+              value={formatMoneyRows(data.potentialRevenue)}
               hint="Si se vende todo el stock propio a precio de lista"
               icon={TrendingUp}
             />

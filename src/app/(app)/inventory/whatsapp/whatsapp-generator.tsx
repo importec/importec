@@ -19,7 +19,10 @@ type Item = {
   batteryPct: number | null;
   isNew: boolean;
   listPrice: number;
+  currency: "USD" | "ARS";
 };
+
+const CURRENCY_PREFIX: Record<string, string> = { USD: "USD", ARS: "$" };
 
 const CATEGORY_EMOJI: Record<string, string> = {
   IPHONE: "📱",
@@ -38,7 +41,7 @@ function itemLine(item: Item, showBattery: boolean) {
     .filter(Boolean)
     .join(" ");
   const battery = showBattery && item.batteryPct ? ` | 🔋 ${item.batteryPct}%` : item.isNew ? " | 🆕 Sellado" : "";
-  return `${CATEGORY_EMOJI[item.category] ?? "📦"} ${name}${battery} — USD ${item.listPrice.toFixed(0)}`;
+  return `${CATEGORY_EMOJI[item.category] ?? "📦"} ${name}${battery} — ${CURRENCY_PREFIX[item.currency]} ${item.listPrice.toFixed(0)}`;
 }
 
 export function WhatsappGenerator({ items }: { items: Item[] }) {

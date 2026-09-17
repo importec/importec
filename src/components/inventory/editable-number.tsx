@@ -3,18 +3,20 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { formatUsd } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
 
 export function EditableNumber({
   value,
   onSave,
   className,
   emptyLabel = "—",
+  currency = "USD",
 }: {
   value: number | null;
   onSave: (value: number) => Promise<{ error?: string } | undefined>;
   className?: string;
   emptyLabel?: string;
+  currency?: "USD" | "ARS";
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value?.toString() ?? "");
@@ -82,7 +84,7 @@ export function EditableNumber({
       }}
       className={`rounded px-1 py-0.5 text-right hover:bg-accent hover:underline ${className ?? ""}`}
     >
-      {value != null ? formatUsd(value) : emptyLabel}
+      {value != null ? formatCurrency(value, currency) : emptyLabel}
     </button>
   );
 }

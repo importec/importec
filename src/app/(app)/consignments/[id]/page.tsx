@@ -8,7 +8,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { customerName, formatCurrency, formatUsd, productTitle } from "@/lib/format";
+import { customerName, formatCurrency, productTitle } from "@/lib/format";
 import { SettlementForm } from "./settlement-form";
 import { ReturnButton } from "./return-button";
 
@@ -81,7 +81,9 @@ export default async function ConsignmentDetailPage({
         <CardContent className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
           <div>
             <p className="text-xs text-muted-foreground">Precio de venta</p>
-            <p className="font-medium">{formatUsd(consignment.inventoryUnit.listPrice.toNumber())}</p>
+            <p className="font-medium">
+              {formatCurrency(consignment.inventoryUnit.listPrice.toNumber(), consignment.inventoryUnit.product.currency)}
+            </p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Comision</p>
@@ -90,7 +92,9 @@ export default async function ConsignmentDetailPage({
           {consignment.minPrice && (
             <div>
               <p className="text-xs text-muted-foreground">Precio minimo</p>
-              <p className="font-medium">{formatUsd(consignment.minPrice.toNumber())}</p>
+              <p className="font-medium">
+                {formatCurrency(consignment.minPrice.toNumber(), consignment.inventoryUnit.product.currency)}
+              </p>
             </div>
           )}
           <div>

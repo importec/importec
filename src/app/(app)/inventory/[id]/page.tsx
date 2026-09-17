@@ -12,7 +12,7 @@ import {
   CATEGORY_LABELS,
   CONDITION_LABELS,
   STATUS_LABELS,
-  formatUsd,
+  formatCurrency,
   productTitle,
 } from "@/lib/format";
 import { STATUS_TONE, STATUS_TRANSITIONS } from "@/lib/inventory/status";
@@ -96,15 +96,17 @@ export default async function InventoryUnitPage({
                   : `Consignado${unit.consignment?.ownerCustomer ? ` — ${unit.consignment.ownerCustomer.firstName} ${unit.consignment.ownerCustomer.lastName}` : ""}`
               }
             />
-            {showCosts && <Field label="Costo" value={formatUsd(unit.cost.toNumber())} />}
-            <Field label="Precio de lista" value={formatUsd(unit.listPrice.toNumber())} />
-            {unit.minPrice && <Field label="Precio minimo" value={formatUsd(unit.minPrice.toNumber())} />}
+            {showCosts && <Field label="Costo" value={formatCurrency(unit.cost.toNumber(), unit.product.currency)} />}
+            <Field label="Precio de lista" value={formatCurrency(unit.listPrice.toNumber(), unit.product.currency)} />
+            {unit.minPrice && (
+              <Field label="Precio minimo" value={formatCurrency(unit.minPrice.toNumber(), unit.product.currency)} />
+            )}
             {showCosts && (
               <Field
                 label="Margen"
                 value={
                   <span className={margin >= 0 ? "text-success" : "text-destructive"}>
-                    {formatUsd(margin)}
+                    {formatCurrency(margin, unit.product.currency)}
                   </span>
                 }
               />

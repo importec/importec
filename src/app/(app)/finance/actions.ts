@@ -48,3 +48,34 @@ export async function createManualMovement(
 
   revalidatePath("/finance");
 }
+
+const ExchangeRateSchema = z.object({
+  usdToArs: z.coerce.number().positive(),
+});
+
+export async function setTodayExchangeRate(
+  _prevState: MovementFormState,
+  formData: FormData,
+): Promise<MovementFormState> {
+  const session = await requireSession();
+  if (!can(session.role, "MANAGE_FINANCE")) {
+    return { error: "No tenes permiso para cargar el tipo de cambio." };
+  }
+
+  const parsed = ExchangeRateSchema.safeParse(Object.fromEntries(formData.entries()));
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Ingresa un valor valido." };
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  await prisma.exchangeRate.upsert({
+    where: { date: today },
+    update: { usdToArs: parsed.data.usdToArs },
+    create: { date: today, usdToArs: parsed.data.usdToArs },
+  });
+
+  revalidatePath("/finance");
+  revalidatePath("/sales/new");
+}

@@ -23,6 +23,7 @@ export default async function NewInventoryUnitPage() {
     variant: product.variant,
     storageGb: product.storageGb,
     color: product.color,
+    currency: product.currency,
   }));
 
   return (

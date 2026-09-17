@@ -6,12 +6,16 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/server/db";
 import { requireSession } from "@/lib/auth/session";
 import { can } from "@/lib/auth/permissions";
+import { Currency } from "@/generated/prisma/enums";
+
+const asEnum = <T extends string>(values: readonly T[]) => z.enum(values as [T, ...T[]]);
 
 const NewProductSchema = z.object({
   name: z.string().min(1, "El nombre es obligatorio"),
   flavor: z.string().optional(),
   cost: z.coerce.number().nonnegative(),
   salePrice: z.coerce.number().nonnegative(),
+  currency: asEnum(Object.values(Currency)).default(Currency.USD),
   stockQuantity: z.coerce.number().int().nonnegative().default(0),
 });
 
@@ -32,6 +36,7 @@ export async function createVapeProduct(
     flavor: raw.flavor || undefined,
     cost: raw.cost,
     salePrice: raw.salePrice,
+    currency: raw.currency || undefined,
     stockQuantity: raw.stockQuantity || 0,
   });
   if (!parsed.success) {

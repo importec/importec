@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { customerName, formatUsd, productTitle } from "@/lib/format";
+import { customerName, formatCurrency, productTitle } from "@/lib/format";
 
 const STATUS_LABEL: Record<string, string> = {
   ACTIVE: "Activa",
@@ -83,7 +83,7 @@ export default async function ConsignmentsPage() {
                 {customerName(consignment.ownerCustomer)} · {consignment.commissionPct.toNumber()}%
               </p>
               <div className="mt-2 flex items-center justify-end border-t pt-2 text-sm font-medium">
-                {formatUsd(consignment.inventoryUnit.listPrice.toNumber())}
+                {formatCurrency(consignment.inventoryUnit.listPrice.toNumber(), consignment.inventoryUnit.product.currency)}
               </div>
             </Link>
           ))
@@ -128,7 +128,7 @@ export default async function ConsignmentsPage() {
                     <StatusBadge tone={STATUS_TONE[consignment.status]}>{STATUS_LABEL[consignment.status]}</StatusBadge>
                   </TableCell>
                   <TableCell className="text-right font-medium">
-                    {formatUsd(consignment.inventoryUnit.listPrice.toNumber())}
+                    {formatCurrency(consignment.inventoryUnit.listPrice.toNumber(), consignment.inventoryUnit.product.currency)}
                   </TableCell>
                 </TableRow>
               ))

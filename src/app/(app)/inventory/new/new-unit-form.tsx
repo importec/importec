@@ -25,9 +25,12 @@ type Product = {
   variant: string | null;
   storageGb: number | null;
   color: string | null;
+  currency: "USD" | "ARS";
 };
 
 type Location = { id: string; name: string };
+
+const CURRENCY_LABELS: Record<string, string> = { USD: "Dolares (USD)", ARS: "Pesos (ARS)" };
 
 export function NewUnitForm({
   products,
@@ -38,6 +41,10 @@ export function NewUnitForm({
 }) {
   const [state, formAction, pending] = useActionState(createInventoryUnit, undefined);
   const [productId, setProductId] = useState<string>("new");
+  const [newProductCurrency, setNewProductCurrency] = useState<"USD" | "ARS">("USD");
+
+  const selectedCurrency =
+    productId === "new" ? newProductCurrency : products.find((p) => p.id === productId)?.currency ?? "USD";
 
   const productLabels: Record<string, string> = {
     new: "+ Crear producto nuevo",
@@ -118,6 +125,22 @@ export function NewUnitForm({
                   <Label htmlFor="color">Color</Label>
                   <Input id="color" name="color" placeholder="Negro" />
                 </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="currency">Moneda de costo y precio</Label>
+                  <Select
+                    name="currency"
+                    value={newProductCurrency}
+                    onValueChange={(value) => setNewProductCurrency((value as "USD" | "ARS") ?? "USD")}
+                  >
+                    <SelectTrigger id="currency">
+                      <SelectValue>{(value: string) => CURRENCY_LABELS[value] ?? "Moneda"}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">Dolares (USD)</SelectItem>
+                      <SelectItem value="ARS">Pesos (ARS)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             )}
           </fieldset>
@@ -175,13 +198,15 @@ export function NewUnitForm({
           </fieldset>
 
           <fieldset className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <legend className="mb-1 text-sm font-medium">Precios</legend>
+            <legend className="mb-1 text-sm font-medium">
+              Precios ({CURRENCY_LABELS[selectedCurrency]})
+            </legend>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="cost">Costo (USD)</Label>
+              <Label htmlFor="cost">Costo</Label>
               <Input id="cost" name="cost" type="number" step="0.01" required />
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="listPrice">Precio de lista (USD)</Label>
+              <Label htmlFor="listPrice">Precio de lista</Label>
               <Input id="listPrice" name="listPrice" type="number" step="0.01" required />
             </div>
             <div className="flex flex-col gap-2">

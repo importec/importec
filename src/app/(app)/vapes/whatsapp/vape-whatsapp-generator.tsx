@@ -7,10 +7,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 
-type Item = { id: string; name: string; flavor: string | null; stockQuantity: number; salePrice: number };
+type Item = {
+  id: string;
+  name: string;
+  flavor: string | null;
+  stockQuantity: number;
+  salePrice: number;
+  currency: "USD" | "ARS";
+};
 
 const DEFAULT_HEADER = "💨 STOCK VAPES DISPONIBLE";
 const DEFAULT_FOOTER = "📦 Entrega inmediata\n📲 Consultanos por mayor";
+const CURRENCY_PREFIX: Record<string, string> = { USD: "USD", ARS: "$" };
 
 export function VapeWhatsappGenerator({ items }: { items: Item[] }) {
   const [showStock, setShowStock] = useState(true);
@@ -21,7 +29,7 @@ export function VapeWhatsappGenerator({ items }: { items: Item[] }) {
     const lines = items.map((item) => {
       const name = [item.name, item.flavor].filter(Boolean).join(" - ");
       const stock = showStock ? ` (x${item.stockQuantity})` : "";
-      return `💨 ${name}${stock} — USD ${item.salePrice.toFixed(0)}`;
+      return `💨 ${name}${stock} — ${CURRENCY_PREFIX[item.currency]} ${item.salePrice.toFixed(0)}`;
     });
     return [header.trim(), ...lines, footer.trim()].filter(Boolean).join("\n\n").replace(/\n\n(?=💨)/g, "\n");
   }, [items, showStock, header, footer]);

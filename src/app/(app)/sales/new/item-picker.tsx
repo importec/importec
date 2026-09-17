@@ -5,10 +5,12 @@ import { Search } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { formatUsd } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
 import type { CartItem } from "./types";
 
-export function ItemPicker({ onAdd }: { onAdd: (item: CartItem) => void }) {
+export type PickedItem = Omit<CartItem, "quantity"> & { currency: "USD" | "ARS" };
+
+export function ItemPicker({ onAdd }: { onAdd: (item: PickedItem) => void }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -64,7 +66,7 @@ export function ItemPicker({ onAdd }: { onAdd: (item: CartItem) => void }) {
                   subtitle: item.subtitle,
                   unitPrice: item.unitPrice,
                   unitCost: item.unitCost,
-                  quantity: 1,
+                  currency: item.currency,
                   maxQuantity: item.maxQuantity,
                 });
                 setOpen(false);
@@ -75,7 +77,7 @@ export function ItemPicker({ onAdd }: { onAdd: (item: CartItem) => void }) {
                 <span>{item.title}</span>
                 <span className="text-xs text-muted-foreground">{item.subtitle}</span>
               </span>
-              <span className="text-xs font-medium">{formatUsd(item.unitPrice)}</span>
+              <span className="text-xs font-medium">{formatCurrency(item.unitPrice, item.currency)}</span>
             </button>
           ))}
         </div>

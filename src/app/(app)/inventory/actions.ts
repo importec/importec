@@ -7,7 +7,7 @@ import { prisma } from "@/server/db";
 import { requireSession } from "@/lib/auth/session";
 import { can } from "@/lib/auth/permissions";
 import { STATUS_TRANSITIONS } from "@/lib/inventory/status";
-import { ProductCategory, ConditionGrade, OwnerType } from "@/generated/prisma/enums";
+import { ProductCategory, ConditionGrade, OwnerType, Currency } from "@/generated/prisma/enums";
 import type { InventoryUnitStatus } from "@/generated/prisma/enums";
 
 const asEnum = <T extends string>(values: readonly T[]) => z.enum(values as [T, ...T[]]);
@@ -22,6 +22,7 @@ const NewUnitSchema = z.object({
       variant: z.string().optional(),
       storageGb: z.coerce.number().int().positive().optional(),
       color: z.string().optional(),
+      currency: asEnum(Object.values(Currency)).default(Currency.USD),
     })
     .optional(),
   locationId: z.string().min(1, "Elegi una ubicacion"),
@@ -60,6 +61,7 @@ export async function createInventoryUnit(
             variant: raw.variant || undefined,
             storageGb: raw.storageGb || undefined,
             color: raw.color || undefined,
+            currency: raw.currency || undefined,
           }
         : undefined,
     locationId: raw.locationId,

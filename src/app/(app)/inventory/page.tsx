@@ -148,6 +148,7 @@ export default async function InventoryPage({
                       <EditableNumber
                         value={unit.cost.toNumber()}
                         onSave={updateInventoryUnitPrice.bind(null, unit.id, "cost")}
+                        currency={unit.product.currency}
                         className="tabular-nums"
                       />
                     </div>
@@ -157,6 +158,7 @@ export default async function InventoryPage({
                     <EditableNumber
                       value={unit.listPrice.toNumber()}
                       onSave={updateInventoryUnitPrice.bind(null, unit.id, "listPrice")}
+                      currency={unit.product.currency}
                       className="font-medium tabular-nums"
                     />
                   </div>
@@ -201,6 +203,7 @@ export default async function InventoryPage({
                         <EditableNumber
                           value={unit.cost.toNumber()}
                           onSave={updateInventoryUnitPrice.bind(null, unit.id, "cost")}
+                          currency={unit.product.currency}
                         />
                       </TableCell>
                     )}
@@ -208,6 +211,7 @@ export default async function InventoryPage({
                       <EditableNumber
                         value={unit.listPrice.toNumber()}
                         onSave={updateInventoryUnitPrice.bind(null, unit.id, "listPrice")}
+                        currency={unit.product.currency}
                       />
                     </TableCell>
                   </TableRow>
@@ -244,6 +248,7 @@ export default async function InventoryPage({
                             <EditableNumber
                               value={lot.avgCost.toNumber()}
                               onSave={updateStockLotCost.bind(null, lot.id)}
+                              currency={lot.product.currency}
                               className="tabular-nums"
                             />
                           </div>
@@ -253,6 +258,7 @@ export default async function InventoryPage({
                           <EditableNumber
                             value={lot.product.listPrice?.toNumber() ?? null}
                             onSave={updateProductListPrice.bind(null, lot.product.id)}
+                            currency={lot.product.currency}
                             className="font-medium tabular-nums"
                           />
                         </div>
@@ -284,6 +290,7 @@ export default async function InventoryPage({
                               <EditableNumber
                                 value={lot.avgCost.toNumber()}
                                 onSave={updateStockLotCost.bind(null, lot.id)}
+                                currency={lot.product.currency}
                               />
                             </TableCell>
                           )}
@@ -291,6 +298,7 @@ export default async function InventoryPage({
                             <EditableNumber
                               value={lot.product.listPrice?.toNumber() ?? null}
                               onSave={updateProductListPrice.bind(null, lot.product.id)}
+                              currency={lot.product.currency}
                             />
                           </TableCell>
                         </TableRow>

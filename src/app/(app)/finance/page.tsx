@@ -15,6 +15,7 @@ import {
 import { formatCurrency } from "@/lib/format";
 import { Wallet, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 import { MovementForm } from "./movement-form";
+import { ExchangeRateForm } from "./exchange-rate-form";
 
 const SOURCE_LABELS: Record<string, string> = {
   SALE: "Venta",
@@ -30,7 +31,7 @@ export default async function FinancePage() {
   const session = await requireSession();
   const canManage = can(session.role, "MANAGE_FINANCE");
 
-  const [balances, movements, payables] = await Promise.all([
+  const [balances, movements, payables, latestRate] = await Promise.all([
     getCashAccountBalances(),
     prisma.cashMovement.findMany({
       orderBy: { createdAt: "desc" },
@@ -41,6 +42,7 @@ export default async function FinancePage() {
       where: { status: "RECEIVED" },
       include: { items: true },
     }),
+    prisma.exchangeRate.findFirst({ orderBy: { date: "desc" } }),
   ]);
 
   const payablesByCurrency = new Map<string, number>();
@@ -88,6 +90,20 @@ export default async function FinancePage() {
           </CardHeader>
           <CardContent>
             <MovementForm cashAccounts={balances.map((a) => ({ id: a.id, name: a.name }))} />
+          </CardContent>
+        </Card>
+      )}
+
+      {canManage && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Tipo de cambio del dia</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-3 text-sm text-muted-foreground">
+              Se usa para convertir precios entre dolares y pesos en ventas, pagos y plan canje.
+            </p>
+            <ExchangeRateForm currentRate={latestRate?.usdToArs.toNumber() ?? null} />
           </CardContent>
         </Card>
       )}

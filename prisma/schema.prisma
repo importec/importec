@@ -91,6 +91,7 @@ model Product {
   color      String?
   isSerialized Boolean       @default(true)
   listPrice  Decimal?        @db.Decimal(12, 2)
+  currency   Currency        @default(USD)
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
 
@@ -620,6 +621,7 @@ model VapeProduct {
   flavor        String?
   cost          Decimal  @db.Decimal(12, 2)
   salePrice     Decimal  @db.Decimal(12, 2)
+  currency      Currency @default(USD)
   stockQuantity Int      @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

@@ -27,15 +27,13 @@ export async function getDashboardData() {
     salesLastMonth,
     stockLots,
   ] = await Promise.all([
-      prisma.inventoryUnit.aggregate({
+      prisma.inventoryUnit.findMany({
         where: { ownerType: "COMPANY", status: { in: [...ACTIVE_STATUSES] } },
-        _sum: { cost: true, listPrice: true },
-        _count: true,
+        select: { cost: true, listPrice: true, product: { select: { currency: true } } },
       }),
-      prisma.inventoryUnit.aggregate({
+      prisma.inventoryUnit.findMany({
         where: { ownerType: "CONSIGNMENT", status: { in: [...ACTIVE_STATUSES] } },
-        _sum: { listPrice: true },
-        _count: true,
+        select: { listPrice: true, product: { select: { currency: true } } },
       }),
       prisma.inventoryUnit.groupBy({
         by: ["productId"],
@@ -94,18 +92,54 @@ export async function getDashboardData() {
     );
   }
 
-  let lotInvestedCapital = 0;
-  let lotPotentialRevenue = 0;
+  // Nunca se suma USD y ARS en una misma cifra: se agrupa por moneda, igual
+  // que ya se hacia con las ventas.
+  type MoneyByCurrency = Map<string, { invested: number; potential: number }>;
+  const byCurrency: MoneyByCurrency = new Map();
+  const addMoney = (currency: string, invested: number, potential: number) => {
+    const existing = byCurrency.get(currency) ?? { invested: 0, potential: 0 };
+    existing.invested += invested;
+    existing.potential += potential;
+    byCurrency.set(currency, existing);
+  };
+
+  for (const unit of ownedActive) {
+    addMoney(unit.product.currency, unit.cost.toNumber(), unit.listPrice.toNumber());
+  }
+
   let lotUnitsCount = 0;
   for (const lot of stockLots) {
-    lotInvestedCapital += lot.avgCost.toNumber() * lot.quantity;
-    lotPotentialRevenue += (lot.product.listPrice?.toNumber() ?? lot.avgCost.toNumber()) * lot.quantity;
+    const invested = lot.avgCost.toNumber() * lot.quantity;
+    const potential = (lot.product.listPrice?.toNumber() ?? lot.avgCost.toNumber()) * lot.quantity;
+    addMoney(lot.product.currency, invested, potential);
     lotUnitsCount += lot.quantity;
     categoryTotals.set(lot.product.category, (categoryTotals.get(lot.product.category) ?? 0) + lot.quantity);
   }
 
-  const investedCapital = (ownedActive._sum.cost?.toNumber() ?? 0) + lotInvestedCapital;
-  const potentialRevenue = (ownedActive._sum.listPrice?.toNumber() ?? 0) + lotPotentialRevenue;
+  const investedCapital = Array.from(byCurrency.entries()).map(([currency, v]) => ({
+    currency: currency as "USD" | "ARS",
+    value: v.invested,
+  }));
+  const potentialRevenue = Array.from(byCurrency.entries()).map(([currency, v]) => ({
+    currency: currency as "USD" | "ARS",
+    value: v.potential,
+  }));
+  const potentialProfit = Array.from(byCurrency.entries()).map(([currency, v]) => ({
+    currency: currency as "USD" | "ARS",
+    value: v.potential - v.invested,
+  }));
+
+  const consignedValueByCurrency = new Map<string, number>();
+  for (const unit of consignedActive) {
+    consignedValueByCurrency.set(
+      unit.product.currency,
+      (consignedValueByCurrency.get(unit.product.currency) ?? 0) + unit.listPrice.toNumber(),
+    );
+  }
+  const consignedValue = Array.from(consignedValueByCurrency.entries()).map(([currency, value]) => ({
+    currency: currency as "USD" | "ARS",
+    value,
+  }));
 
   const toSalesSummary = (rows: typeof salesToday) =>
     rows.map((row) => ({
@@ -129,10 +163,10 @@ export async function getDashboardData() {
     salesThisMonth: salesThisMonthWithTrend,
     investedCapital,
     potentialRevenue,
-    potentialProfit: potentialRevenue - investedCapital,
-    ownedUnitsCount: ownedActive._count + lotUnitsCount,
-    consignedUnitsCount: consignedActive._count,
-    consignedValue: consignedActive._sum.listPrice?.toNumber() ?? 0,
+    potentialProfit,
+    ownedUnitsCount: ownedActive.length + lotUnitsCount,
+    consignedUnitsCount: consignedActive.length,
+    consignedValue,
     totalAvailable: totalAvailable + lotUnitsCount,
     categoryBreakdown: Array.from(categoryTotals.entries()).sort((a, b) => b[1] - a[1]),
     staleUnits: staleUnits.map((unit) => ({
