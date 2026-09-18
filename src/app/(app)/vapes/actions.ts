@@ -271,3 +271,112 @@ export async function returnStockFromSeller(
   revalidatePath("/vapes");
   revalidatePath(`/vapes/sellers/${sellerId}`);
 }
+
+const NewDebtSchema = z.object({
+  debtorName: z.string().min(1, "El nombre es obligatorio"),
+  phone: z.string().optional(),
+  productId: z.string().optional(),
+  quantity: z.coerce.number().int().positive().optional(),
+  description: z.string().optional(),
+  amount: z.coerce.number().positive(),
+  currency: asEnum(Object.values(Currency)).default(Currency.ARS),
+  notes: z.string().optional(),
+});
+
+export async function createVapeDebt(
+  _prevState: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const session = await requireSession();
+  if (!can(session.role, "MANAGE_VAPES")) {
+    return { error: "No tenes permiso para cargar deudas." };
+  }
+
+  const raw = Object.fromEntries(formData.entries());
+  const parsed = NewDebtSchema.safeParse({
+    debtorName: raw.debtorName,
+    phone: raw.phone || undefined,
+    productId: raw.productId && raw.productId !== "none" ? raw.productId : undefined,
+    quantity: raw.quantity || undefined,
+    description: raw.description || undefined,
+    amount: raw.amount,
+    currency: raw.currency || undefined,
+    notes: raw.notes || undefined,
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Revisa los datos." };
+  }
+
+  const data = parsed.data;
+
+  if (data.productId && data.quantity) {
+    const product = await prisma.vapeProduct.findUnique({ where: { id: data.productId } });
+    if (!product) return { error: "El producto no existe." };
+    if (product.stockQuantity < data.quantity) {
+      return { error: `Solo hay ${product.stockQuantity} unidades en stock propio.` };
+    }
+  }
+
+  await prisma.$transaction(async (tx) => {
+    if (data.productId && data.quantity) {
+      await tx.vapeProduct.update({
+        where: { id: data.productId },
+        data: { stockQuantity: { decrement: data.quantity } },
+      });
+    }
+
+    await tx.vapeDebt.create({
+      data: {
+        debtorName: data.debtorName,
+        phone: data.phone || null,
+        productId: data.productId || null,
+        quantity: data.quantity ?? null,
+        description: data.description || null,
+        amount: data.amount,
+        currency: data.currency,
+        notes: data.notes || null,
+      },
+    });
+  });
+
+  revalidatePath("/vapes");
+  revalidatePath("/vapes/debts");
+  redirect("/vapes/debts");
+}
+
+export async function markVapeDebtPaid(debtId: string): Promise<PriceEditState> {
+  const session = await requireSession();
+  if (!can(session.role, "MANAGE_VAPES")) {
+    return { error: "No tenes permiso para esta accion." };
+  }
+
+  const debt = await prisma.vapeDebt.findUnique({ where: { id: debtId } });
+  if (!debt) return { error: "La deuda no existe." };
+  if (debt.paidAt) return { error: "Ya estaba marcada como pagada." };
+
+  await prisma.vapeDebt.update({ where: { id: debtId }, data: { paidAt: new Date() } });
+  revalidatePath("/vapes/debts");
+}
+
+export async function deleteVapeDebt(debtId: string): Promise<PriceEditState> {
+  const session = await requireSession();
+  if (!can(session.role, "MANAGE_VAPES")) {
+    return { error: "No tenes permiso para esta accion." };
+  }
+
+  const debt = await prisma.vapeDebt.findUnique({ where: { id: debtId } });
+  if (!debt) return { error: "La deuda no existe." };
+
+  await prisma.$transaction(async (tx) => {
+    if (debt.productId && debt.quantity) {
+      await tx.vapeProduct.update({
+        where: { id: debt.productId },
+        data: { stockQuantity: { increment: debt.quantity } },
+      });
+    }
+    await tx.vapeDebt.delete({ where: { id: debtId } });
+  });
+
+  revalidatePath("/vapes");
+  revalidatePath("/vapes/debts");
+}

@@ -14,6 +14,8 @@ import {
   ShieldCheck,
   Cigarette,
   Users2,
+  CircleDollarSign,
+  CalendarClock,
 } from "lucide-react";
 
 export type NavItem = {
@@ -51,6 +53,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Stock", href: "/vapes", icon: Cigarette },
       { label: "Vendedores", href: "/vapes/sellers", icon: Users2 },
+      { label: "Adeudado", href: "/vapes/debts", icon: CircleDollarSign },
     ],
   },
   {
@@ -64,6 +67,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "Finanzas",
     items: [
       { label: "Caja y finanzas", href: "/finance", icon: Wallet },
+      { label: "Cuotas", href: "/finance/installments", icon: CalendarClock },
       { label: "Gastos", href: "/expenses", icon: Receipt },
       { label: "Reportes", href: "/reports", icon: BarChart3 },
     ],

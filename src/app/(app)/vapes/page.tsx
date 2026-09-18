@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, Users2, MessageCircle, Cigarette } from "lucide-react";
+import { Plus, Users2, MessageCircle, Cigarette, CircleDollarSign } from "lucide-react";
 import { prisma } from "@/server/db";
 import { requireSession } from "@/lib/auth/session";
 import { can } from "@/lib/auth/permissions";
@@ -42,6 +42,10 @@ export default async function VapesPage() {
           <Link href="/vapes/sellers" className={buttonVariants({ variant: "outline" })}>
             <Users2 className="size-4" />
             Vendedores
+          </Link>
+          <Link href="/vapes/debts" className={buttonVariants({ variant: "outline" })}>
+            <CircleDollarSign className="size-4" />
+            Adeudado
           </Link>
           <Link href="/vapes/whatsapp" className={buttonVariants({ variant: "outline" })}>
             <MessageCircle className="size-4" />

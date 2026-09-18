@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { prisma } from "@/server/db";
 import { requireSession } from "@/lib/auth/session";
 import { can } from "@/lib/auth/permissions";
 import { getCashAccountBalances } from "@/server/queries/finance";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -13,7 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/format";
-import { Wallet, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
+import { Wallet, ArrowDownCircle, ArrowUpCircle, CalendarClock } from "lucide-react";
 import { MovementForm } from "./movement-form";
 import { ExchangeRateForm } from "./exchange-rate-form";
 
@@ -24,6 +26,7 @@ const SOURCE_LABELS: Record<string, string> = {
   WITHDRAWAL: "Retiro",
   REPAIR: "Reparacion",
   CONSIGNMENT_SETTLEMENT: "Liquidacion",
+  INSTALLMENT: "Cuota",
   OTHER: "Otro",
 };
 
@@ -31,7 +34,7 @@ export default async function FinancePage() {
   const session = await requireSession();
   const canManage = can(session.role, "MANAGE_FINANCE");
 
-  const [balances, movements, payables, latestRate] = await Promise.all([
+  const [balances, movements, payables, latestRate, pendingInstallments] = await Promise.all([
     getCashAccountBalances(),
     prisma.cashMovement.findMany({
       orderBy: { createdAt: "desc" },
@@ -43,7 +46,25 @@ export default async function FinancePage() {
       include: { items: true },
     }),
     prisma.exchangeRate.findFirst({ orderBy: { date: "desc" } }),
+    prisma.installment.findMany({
+      where: { paidAt: null },
+      include: { plan: true },
+    }),
   ]);
+
+  const installmentsByCurrency = new Map<string, number>();
+  for (const installment of pendingInstallments) {
+    installmentsByCurrency.set(
+      installment.plan.currency,
+      (installmentsByCurrency.get(installment.plan.currency) ?? 0) + installment.amount.toNumber(),
+    );
+  }
+  const installmentsLabel =
+    installmentsByCurrency.size === 0
+      ? formatCurrency(0, "ARS")
+      : Array.from(installmentsByCurrency.entries())
+          .map(([currency, amount]) => formatCurrency(amount, currency as "USD" | "ARS"))
+          .join(" + ");
 
   const payablesByCurrency = new Map<string, number>();
   for (const purchase of payables) {
@@ -59,9 +80,15 @@ export default async function FinancePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">Caja y finanzas</h1>
-        <p className="text-sm text-muted-foreground">Estado de las cuentas y movimientos recientes.</p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight">Caja y finanzas</h1>
+          <p className="text-sm text-muted-foreground">Estado de las cuentas y movimientos recientes.</p>
+        </div>
+        <Link href="/finance/installments" className={buttonVariants({ variant: "outline" })}>
+          <CalendarClock className="size-4" />
+          Ver cuotas
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -80,6 +107,13 @@ export default async function FinancePage() {
           hint={`${payables.length} compra${payables.length === 1 ? "" : "s"} recibidas sin pagar`}
           tone={payables.length > 0 ? "warning" : "default"}
           icon={ArrowUpCircle}
+        />
+        <KpiCard
+          label="Cuotas por cobrar"
+          value={installmentsLabel}
+          hint={`${pendingInstallments.length} cuota${pendingInstallments.length === 1 ? "" : "s"} pendiente${pendingInstallments.length === 1 ? "" : "s"}`}
+          tone={pendingInstallments.length > 0 ? "warning" : "default"}
+          icon={CalendarClock}
         />
       </div>
 

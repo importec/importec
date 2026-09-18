@@ -207,11 +207,12 @@ model Customer {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  sales         Sale[]
-  quotes        Quote[]
-  reservations  Reservation[]
-  consignments  Consignment[]
-  repairs       Repair[]
+  sales            Sale[]
+  quotes           Quote[]
+  reservations     Reservation[]
+  consignments     Consignment[]
+  repairs          Repair[]
+  installmentPlans InstallmentPlan[]
 
   @@index([lastName, firstName])
 }
@@ -570,6 +571,7 @@ enum CashMovementSource {
   WITHDRAWAL
   REPAIR
   CONSIGNMENT_SETTLEMENT
+  INSTALLMENT
   OTHER
 }
 
@@ -587,7 +589,35 @@ model CashMovement {
   createdByUser   User?               @relation(fields: [createdByUserId], references: [id])
   createdAt       DateTime            @default(now())
 
+  installment Installment?
+
   @@index([cashAccountId, createdAt])
+}
+
+model InstallmentPlan {
+  id          String   @id @default(cuid())
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id])
+  totalAmount Decimal  @db.Decimal(12, 2)
+  currency    Currency @default(ARS)
+  description String?
+  createdAt   DateTime @default(now())
+
+  installments Installment[]
+}
+
+model Installment {
+  id             String    @id @default(cuid())
+  planId         String
+  plan           InstallmentPlan @relation(fields: [planId], references: [id])
+  seq            Int
+  dueDate        DateTime
+  amount         Decimal   @db.Decimal(12, 2)
+  paidAt         DateTime?
+  cashMovementId String?   @unique
+  cashMovement   CashMovement? @relation(fields: [cashMovementId], references: [id])
+
+  @@index([planId])
 }
 
 model ExpenseCategory {
@@ -627,6 +657,24 @@ model VapeProduct {
   updatedAt     DateTime @updatedAt
 
   sellerStocks VapeSellerStock[]
+  debts        VapeDebt[]
+}
+
+model VapeDebt {
+  id          String    @id @default(cuid())
+  debtorName  String
+  phone       String?
+  productId   String?
+  product     VapeProduct? @relation(fields: [productId], references: [id])
+  quantity    Int?
+  description String?
+  amount      Decimal   @db.Decimal(12, 2)
+  currency    Currency  @default(ARS)
+  createdAt   DateTime  @default(now())
+  paidAt      DateTime?
+  notes       String?
+
+  @@index([paidAt])
 }
 
 model VapeSeller {
