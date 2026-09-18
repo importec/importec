@@ -104,6 +104,28 @@ model Product {
   @@index([category, brand, model])
 }
 
+// Catalogo de referencia: cuanto pagamos por cada modelo segun su condicion
+// (plan canje, compra a proveedores). Es una guia de precios, no inventario:
+// no esta ligado a Product ni a unidades fisicas.
+model BuyPriceCatalog {
+  id           String          @id @default(cuid())
+  category     ProductCategory
+  brand        String          @default("Apple")
+  model        String
+  variant      String?
+  storageGb    Int?
+  currency     Currency        @default(USD)
+  sealedPrice  Decimal?        @db.Decimal(12, 2)
+  likeNewPrice Decimal?        @db.Decimal(12, 2)
+  goodPrice    Decimal?        @db.Decimal(12, 2)
+  fairPrice    Decimal?        @db.Decimal(12, 2)
+  notes        String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([category, brand, model])
+}
+
 enum ConditionGrade {
   NEW
   LIKE_NEW

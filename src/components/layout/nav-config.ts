@@ -16,6 +16,7 @@ import {
   Users2,
   CircleDollarSign,
   CalendarClock,
+  Tags,
 } from "lucide-react";
 
 export type NavItem = {
@@ -42,6 +43,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "Operacion",
     items: [
       { label: "Inventario", href: "/inventory", icon: Package },
+      { label: "Catalogo de compra", href: "/catalog", icon: Tags },
       { label: "Ventas", href: "/sales", icon: ShoppingCart },
       { label: "Plan canje", href: "/trade-ins", icon: Repeat },
       { label: "Consignacion", href: "/consignments", icon: HandCoins },
