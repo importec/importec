@@ -605,6 +605,7 @@ model CashMovement {
   cashAccount     CashAccount         @relation(fields: [cashAccountId], references: [id])
   type            CashMovementType
   amount          Decimal             @db.Decimal(12, 2)
+  costAtSale      Decimal?            @db.Decimal(12, 2)
   currency        Currency
   source          CashMovementSource
   referenceId     String?

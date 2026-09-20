@@ -306,6 +306,7 @@ export async function recordSellerSale(
   }
 
   const amount = product.salePrice.toNumber() * quantity;
+  const costAtSale = product.cost.toNumber() * quantity;
 
   await prisma.$transaction(async (tx) => {
     await tx.vapeSellerStock.update({
@@ -319,6 +320,7 @@ export async function recordSellerSale(
         cashAccountId,
         type: "IN",
         amount,
+        costAtSale,
         currency: product.currency,
         source: "VAPE_SALE",
         referenceId: sellerId,
@@ -379,6 +381,7 @@ export async function sellVapeRetail(
         cashAccountId,
         type: "IN",
         amount: price * quantity,
+        costAtSale: product.cost.toNumber() * quantity,
         currency: product.currency,
         source: "VAPE_SALE",
         referenceId: productId,

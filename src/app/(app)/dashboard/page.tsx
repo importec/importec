@@ -13,6 +13,8 @@ import {
   AlertTriangle,
   ShoppingCart,
   CalendarDays,
+  DollarSign,
+  Wallet,
 } from "lucide-react";
 
 type SalesSummaryRow = { currency: "USD" | "ARS"; count: number; total: number; profit: number };
@@ -96,7 +98,7 @@ export default async function DashboardPage() {
         <KpiCard
           label="Unidades disponibles"
           value={formatNumber(data.totalAvailable)}
-          hint={`${formatNumber(data.ownedUnitsCount)} propias · ${formatNumber(data.consignedUnitsCount)} consignadas`}
+          hint={`${formatNumber(data.ownedUnitsCount)} propias · ${formatNumber(data.consignedUnitsCount)} consignadas · ${formatNumber(data.vapeUnitsCount)} vapes`}
           icon={Package}
         />
         {showFinancials && (
@@ -104,7 +106,7 @@ export default async function DashboardPage() {
             <KpiCard
               label="Capital invertido"
               value={formatMoneyRows(data.investedCapital)}
-              hint="Costo del stock propio activo"
+              hint="Costo del stock propio activo: celulares, accesorios y vapes"
               icon={Boxes}
             />
             <KpiCard
@@ -113,9 +115,69 @@ export default async function DashboardPage() {
               hint="Si se vende todo el stock propio a precio de lista"
               icon={TrendingUp}
             />
+            <KpiCard
+              label="Ganancia total (historica)"
+              value={formatMoneyRows(data.realizedProfitAllTime)}
+              tone="positive"
+              hint="Ganancia ya cobrada, todas las ventas confirmadas"
+              icon={DollarSign}
+            />
           </>
         )}
       </div>
+
+      {showFinancials && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Wallet className="size-4" />
+              Resumen consolidado (dolar blue)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {data.consolidated.blueRate ? (
+              <>
+                <p className="mb-3 text-sm text-muted-foreground">
+                  Todo el negocio (celulares, accesorios y vapes) convertido a un solo numero, usando el dolar
+                  blue del momento: {formatCurrency(data.consolidated.blueRate.venta, "ARS")} por USD
+                  {" "}(actualizado {new Date(data.consolidated.blueRate.updatedAt).toLocaleString("es-AR")}).
+                </p>
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Capital invertido</p>
+                    <p className="font-semibold tabular-nums">
+                      {data.consolidated.investedCapitalUsd != null ? formatUsd(data.consolidated.investedCapitalUsd) : "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Ganancia potencial</p>
+                    <p className="font-semibold tabular-nums text-success">
+                      {data.consolidated.potentialProfitUsd != null ? formatUsd(data.consolidated.potentialProfitUsd) : "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Ventas del mes</p>
+                    <p className="font-semibold tabular-nums">
+                      {data.consolidated.salesThisMonthUsd != null ? formatUsd(data.consolidated.salesThisMonthUsd) : "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Ganancia historica</p>
+                    <p className="font-semibold tabular-nums text-success">
+                      {data.consolidated.realizedProfitAllTimeUsd != null ? formatUsd(data.consolidated.realizedProfitAllTimeUsd) : "—"}
+                    </p>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No se pudo obtener la cotizacion del dolar blue en este momento. Los totales por moneda de arriba
+                siguen siendo correctos.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
