@@ -77,13 +77,21 @@ export default async function DashboardPage() {
           icon={ShoppingCart}
         />
         {showFinancials ? (
-          <KpiCard
-            label="Ganancia potencial"
-            value={formatMoneyRows(data.potentialProfit)}
-            tone="positive"
-            hint="Si se vende todo el stock propio a precio de lista"
-            icon={TrendingUp}
-          />
+          <>
+            <KpiCard
+              label="Disponible para comprar"
+              value={formatMoneyRows(data.cashAvailable)}
+              hint="Plata liquida en caja, bancos y billeteras (Lemon Cash, etc.)"
+              icon={Wallet}
+            />
+            <KpiCard
+              label="Ganancia potencial"
+              value={formatMoneyRows(data.potentialProfit)}
+              tone="positive"
+              hint="Si se vende todo el stock propio a precio de lista"
+              icon={TrendingUp}
+            />
+          </>
         ) : (
           <KpiCard
             label="Stock consignado"
@@ -167,6 +175,12 @@ export default async function DashboardPage() {
                       {data.consolidated.realizedProfitAllTimeUsd != null ? formatUsd(data.consolidated.realizedProfitAllTimeUsd) : "—"}
                     </p>
                   </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Disponible para comprar</p>
+                    <p className="font-semibold tabular-nums">
+                      {data.consolidated.cashAvailableUsd != null ? formatUsd(data.consolidated.cashAvailableUsd) : "—"}
+                    </p>
+                  </div>
                 </div>
               </>
             ) : (
@@ -180,6 +194,34 @@ export default async function DashboardPage() {
       )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {showFinancials && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Caja y billeteras</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {data.cashBalances.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Todavia no hay cuentas de caja cargadas.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {data.cashBalances.map((account) => (
+                    <li key={account.id} className="flex items-center justify-between text-sm">
+                      <span>{account.name}</span>
+                      <span className="font-medium tabular-nums">
+                        {formatCurrency(account.balance, account.currency)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="mt-3 text-xs text-muted-foreground">
+                Se actualiza solo con cada venta o movimiento que cargues. Para agregar otra billetera (ej. Lemon
+                Cash) o cargar el saldo inicial, anda a Caja y finanzas.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Stock disponible por categoria</CardTitle>

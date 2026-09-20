@@ -1,6 +1,7 @@
 import { prisma } from "@/server/db";
 import { productTitle } from "@/lib/format";
 import { getBlueDollarRate, arsToUsd } from "@/lib/blue-dollar";
+import { getCashAccountBalances } from "@/server/queries/finance";
 
 const ACTIVE_STATUSES = ["AVAILABLE", "RESERVED", "IN_REVIEW"] as const;
 const STALE_DAYS = 45;
@@ -40,6 +41,7 @@ export async function getDashboardData() {
     vapeSalesLastMonth,
     vapeSalesAllTime,
     blueRate,
+    cashBalances,
   ] = await Promise.all([
       prisma.inventoryUnit.findMany({
         where: { ownerType: "COMPANY", status: { in: [...ACTIVE_STATUSES] } },
@@ -127,6 +129,7 @@ export async function getDashboardData() {
         _sum: { amount: true, costAtSale: true },
       }),
       getBlueDollarRate(),
+      getCashAccountBalances(),
     ]);
 
   const products = await prisma.product.findMany({
@@ -276,6 +279,18 @@ export async function getDashboardData() {
     value,
   }));
 
+  // Plata disponible ya cobrada, en las cuentas de caja (efectivo, banco,
+  // billeteras virtuales como Lemon Cash, etc.): esto es lo que hay para
+  // usar/comprar hoy, distinto del capital "invertido" en stock sin vender.
+  const cashByCurrency = new Map<string, number>();
+  for (const account of cashBalances) {
+    cashByCurrency.set(account.currency, (cashByCurrency.get(account.currency) ?? 0) + account.balance);
+  }
+  const cashAvailable = Array.from(cashByCurrency.entries()).map(([currency, value]) => ({
+    currency: currency as "USD" | "ARS",
+    value,
+  }));
+
   // Totales consolidados: todo convertido a un solo numero en dolares usando
   // la cotizacion del dolar blue del momento (null si la API no respondio).
   const blueRateVenta = blueRate?.venta ?? null;
@@ -288,6 +303,7 @@ export async function getDashboardData() {
       blueRateVenta,
     ),
     realizedProfitAllTimeUsd: toUsdEquivalent(realizedProfitAllTime, blueRateVenta),
+    cashAvailableUsd: toUsdEquivalent(cashAvailable, blueRateVenta),
   };
 
   return {
@@ -297,6 +313,8 @@ export async function getDashboardData() {
     potentialRevenue,
     potentialProfit,
     realizedProfitAllTime,
+    cashBalances,
+    cashAvailable,
     consolidated,
     ownedUnitsCount: ownedActive.length + lotUnitsCount,
     consignedUnitsCount: consignedActive.length,

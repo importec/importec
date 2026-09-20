@@ -6,9 +6,35 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/server/db";
 import { requireSession } from "@/lib/auth/session";
 import { can } from "@/lib/auth/permissions";
-import { Currency } from "@/generated/prisma/enums";
+import { Currency, CashAccountKind } from "@/generated/prisma/enums";
 
 const asEnum = <T extends string>(values: readonly T[]) => z.enum(values as [T, ...T[]]);
+
+const NewAccountSchema = z.object({
+  name: z.string().trim().min(1, "El nombre es obligatorio"),
+  currency: asEnum(Object.values(Currency)),
+  kind: asEnum(Object.values(CashAccountKind)),
+});
+
+export async function createCashAccount(
+  _prevState: MovementFormState,
+  formData: FormData,
+): Promise<MovementFormState> {
+  const session = await requireSession();
+  if (!can(session.role, "MANAGE_FINANCE")) {
+    return { error: "No tenes permiso para crear cuentas de caja." };
+  }
+
+  const parsed = NewAccountSchema.safeParse(Object.fromEntries(formData.entries()));
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Revisa los datos." };
+  }
+
+  await prisma.cashAccount.create({ data: parsed.data });
+
+  revalidatePath("/finance");
+  revalidatePath("/dashboard");
+}
 
 const MovementSchema = z.object({
   cashAccountId: z.string().min(1),

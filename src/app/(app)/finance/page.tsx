@@ -18,6 +18,7 @@ import { formatCurrency } from "@/lib/format";
 import { Wallet, ArrowDownCircle, ArrowUpCircle, CalendarClock } from "lucide-react";
 import { MovementForm } from "./movement-form";
 import { ExchangeRateForm } from "./exchange-rate-form";
+import { NewAccountForm } from "./new-account-form";
 
 const SOURCE_LABELS: Record<string, string> = {
   SALE: "Venta",
@@ -124,6 +125,21 @@ export default async function FinancePage() {
           </CardHeader>
           <CardContent>
             <MovementForm cashAccounts={balances.map((a) => ({ id: a.id, name: a.name }))} />
+          </CardContent>
+        </Card>
+      )}
+
+      {canManage && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Nueva cuenta o billetera</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-3 text-sm text-muted-foreground">
+              Agrega una cuenta para llevar el saldo de una billetera virtual (Lemon Cash, Mercado Pago, etc.),
+              banco o caja. Despues cargas los movimientos a mano o la elegis como destino de un cobro.
+            </p>
+            <NewAccountForm />
           </CardContent>
         </Card>
       )}
