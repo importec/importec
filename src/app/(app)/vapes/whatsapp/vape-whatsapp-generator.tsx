@@ -12,13 +12,10 @@ type Item = {
   name: string;
   flavor: string | null;
   stockQuantity: number;
-  salePrice: number;
-  currency: "USD" | "ARS";
 };
 
-const DEFAULT_HEADER = "💨 STOCK VAPES DISPONIBLE";
+const DEFAULT_HEADER = "💨 STOCK VAPES DISPONIBLE\n💰 $ c/u";
 const DEFAULT_FOOTER = "📦 Entrega inmediata\n📲 Consultanos por mayor";
-const CURRENCY_PREFIX: Record<string, string> = { USD: "USD", ARS: "$" };
 
 export function VapeWhatsappGenerator({ items }: { items: Item[] }) {
   const [showStock, setShowStock] = useState(true);
@@ -29,7 +26,7 @@ export function VapeWhatsappGenerator({ items }: { items: Item[] }) {
     const lines = items.map((item) => {
       const name = [item.name, item.flavor].filter(Boolean).join(" - ");
       const stock = showStock ? ` (x${item.stockQuantity})` : "";
-      return `💨 ${name}${stock} — ${CURRENCY_PREFIX[item.currency]} ${item.salePrice.toFixed(0)}`;
+      return `💨 ${name}${stock}`;
     });
     return [header.trim(), ...lines, footer.trim()].filter(Boolean).join("\n\n").replace(/\n\n(?=💨)/g, "\n");
   }, [items, showStock, header, footer]);
@@ -58,7 +55,7 @@ export function VapeWhatsappGenerator({ items }: { items: Item[] }) {
           </label>
           <div>
             <p className="mb-2 text-sm font-medium">Encabezado</p>
-            <Textarea value={header} onChange={(e) => setHeader(e.target.value)} rows={1} />
+            <Textarea value={header} onChange={(e) => setHeader(e.target.value)} rows={2} />
           </div>
           <div>
             <p className="mb-2 text-sm font-medium">Texto final</p>
