@@ -17,6 +17,7 @@ import {
 import { cn } from "@/lib/utils";
 import { AssignForm } from "./assign-form";
 import { ReturnButton } from "./return-button";
+import { SoldButton } from "./sold-button";
 
 export default async function VapeSellerDetailPage({
   params,
@@ -26,12 +27,13 @@ export default async function VapeSellerDetailPage({
   const session = await requireSession();
   const { id } = await params;
 
-  const [seller, products] = await Promise.all([
+  const [seller, products, cashAccounts] = await Promise.all([
     prisma.vapeSeller.findUnique({
       where: { id },
       include: { stocks: { include: { product: true }, orderBy: { quantity: "desc" } } },
     }),
     prisma.vapeProduct.findMany({ orderBy: { name: "asc" } }),
+    prisma.cashAccount.findMany({ orderBy: { name: "asc" } }),
   ]);
 
   if (!seller) notFound();
@@ -97,7 +99,15 @@ export default async function VapeSellerDetailPage({
                     <span className="shrink-0 font-medium">{stock.quantity}</span>
                   </div>
                   {canManage && (
-                    <div className="mt-2 flex justify-end border-t pt-2">
+                    <div className="mt-2 flex flex-wrap justify-end gap-1 border-t pt-2">
+                      <SoldButton
+                        sellerId={seller.id}
+                        productId={stock.productId}
+                        maxQuantity={stock.quantity}
+                        unitPrice={stock.product.salePrice.toNumber()}
+                        currency={stock.product.currency}
+                        cashAccounts={cashAccounts.filter((a) => a.currency === stock.product.currency)}
+                      />
                       <ReturnButton sellerId={seller.id} productId={stock.productId} maxQuantity={stock.quantity} />
                     </div>
                   )}
@@ -135,7 +145,17 @@ export default async function VapeSellerDetailPage({
                       <TableCell className="text-right font-medium">{stock.quantity}</TableCell>
                       {canManage && (
                         <TableCell className="text-right">
-                          <ReturnButton sellerId={seller.id} productId={stock.productId} maxQuantity={stock.quantity} />
+                          <div className="flex flex-wrap justify-end gap-1">
+                            <SoldButton
+                              sellerId={seller.id}
+                              productId={stock.productId}
+                              maxQuantity={stock.quantity}
+                              unitPrice={stock.product.salePrice.toNumber()}
+                              currency={stock.product.currency}
+                              cashAccounts={cashAccounts.filter((a) => a.currency === stock.product.currency)}
+                            />
+                            <ReturnButton sellerId={seller.id} productId={stock.productId} maxQuantity={stock.quantity} />
+                          </div>
                         </TableCell>
                       )}
                     </TableRow>

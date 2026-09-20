@@ -80,6 +80,7 @@ export default async function SaleDetailPage({
           )}
           {" · Vendido por "}
           {sale.soldByUser.name}
+          {sale.resellerName && ` · Revendedor: ${sale.resellerName}`}
         </p>
       </div>
 

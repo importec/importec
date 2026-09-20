@@ -17,6 +17,8 @@ import {
 } from "@/lib/format";
 import { STATUS_TONE, STATUS_TRANSITIONS } from "@/lib/inventory/status";
 import { StatusActions } from "./status-actions";
+import { DeleteUnitButton } from "./delete-unit-button";
+import { Pencil } from "lucide-react";
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -64,11 +66,22 @@ export default async function InventoryUnitPage({
           <ArrowLeft className="size-4" />
           Volver a inventario
         </Link>
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-xl font-semibold tracking-tight">
-            {productTitle(unit.product)}
-          </h1>
-          <StatusBadge tone={STATUS_TONE[unit.status]}>{STATUS_LABELS[unit.status]}</StatusBadge>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-xl font-semibold tracking-tight">
+              {productTitle(unit.product)}
+            </h1>
+            <StatusBadge tone={STATUS_TONE[unit.status]}>{STATUS_LABELS[unit.status]}</StatusBadge>
+          </div>
+          {canManage && (
+            <div className="flex gap-2">
+              <Link href={`/inventory/${unit.id}/edit`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+                <Pencil className="size-4" />
+                Editar
+              </Link>
+              <DeleteUnitButton unitId={unit.id} />
+            </div>
+          )}
         </div>
         <p className="text-sm text-muted-foreground">
           {CATEGORY_LABELS[unit.product.category]}

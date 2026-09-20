@@ -25,10 +25,6 @@ const NewUnitSchema = z.object({
       currency: asEnum(Object.values(Currency)).default(Currency.USD),
     })
     .optional(),
-  locationId: z.string().min(1, "Elegi una ubicacion"),
-  imei: z.string().trim().optional(),
-  serialNumber: z.string().trim().optional(),
-  condition: asEnum(Object.values(ConditionGrade)),
   batteryPct: z.coerce.number().int().min(0).max(100).optional(),
   isNew: z.coerce.boolean().optional(),
   cost: z.coerce.number().nonnegative(),
@@ -64,10 +60,6 @@ export async function createInventoryUnit(
             currency: raw.currency || undefined,
           }
         : undefined,
-    locationId: raw.locationId,
-    imei: raw.imei || undefined,
-    serialNumber: raw.serialNumber || undefined,
-    condition: raw.condition,
     batteryPct: raw.batteryPct || undefined,
     isNew: raw.isNew === "on",
     cost: raw.cost,
@@ -91,6 +83,13 @@ export async function createInventoryUnit(
 
   let unitId = "";
 
+  const defaultLocation = await prisma.location.findFirst({
+    orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+  });
+  if (!defaultLocation) {
+    return { error: "No hay ninguna ubicacion cargada en el sistema todavia." };
+  }
+
   await prisma.$transaction(async (tx) => {
     let productId = data.productId;
 
@@ -102,10 +101,8 @@ export async function createInventoryUnit(
     const unit = await tx.inventoryUnit.create({
       data: {
         productId,
-        locationId: data.locationId,
-        imei: data.imei || null,
-        serialNumber: data.serialNumber || null,
-        condition: data.condition,
+        locationId: defaultLocation.id,
+        condition: data.isNew ? "NEW" : "GOOD",
         batteryPct: data.batteryPct ?? null,
         isNew: data.isNew ?? false,
         cost: data.cost,
@@ -254,5 +251,137 @@ export async function updateProductListPrice(productId: string, value: number): 
   if (!product) return { error: "El producto no existe." };
 
   await prisma.product.update({ where: { id: productId }, data: { listPrice: value } });
+  revalidatePath("/inventory");
+}
+
+const EditUnitSchema = z.object({
+  locationId: z.string().min(1, "Elegi una ubicacion"),
+  condition: asEnum(Object.values(ConditionGrade)),
+  imei: z.string().trim().optional(),
+  serialNumber: z.string().trim().optional(),
+  batteryPct: z.coerce.number().int().min(0).max(100).optional(),
+  isNew: z.coerce.boolean().optional(),
+  minPrice: z.coerce.number().nonnegative().optional(),
+  notes: z.string().optional(),
+});
+
+export type EditUnitState = { error: string } | undefined;
+
+export async function updateInventoryUnit(
+  unitId: string,
+  _prevState: EditUnitState,
+  formData: FormData,
+): Promise<EditUnitState> {
+  const session = await requireSession();
+  if (!can(session.role, "MANAGE_INVENTORY")) {
+    return { error: "No tenes permiso para editar equipos." };
+  }
+
+  const unit = await prisma.inventoryUnit.findUnique({ where: { id: unitId } });
+  if (!unit) return { error: "El equipo no existe." };
+
+  const raw = Object.fromEntries(formData.entries());
+  const parsed = EditUnitSchema.safeParse({
+    locationId: raw.locationId,
+    condition: raw.condition,
+    imei: raw.imei || undefined,
+    serialNumber: raw.serialNumber || undefined,
+    batteryPct: raw.batteryPct || undefined,
+    isNew: raw.isNew === "on",
+    minPrice: raw.minPrice || undefined,
+    notes: raw.notes || undefined,
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Revisa los datos del formulario." };
+  }
+  const data = parsed.data;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.inventoryUnit.update({
+      where: { id: unitId },
+      data: {
+        locationId: data.locationId,
+        condition: data.condition,
+        imei: data.imei || null,
+        serialNumber: data.serialNumber || null,
+        batteryPct: data.batteryPct ?? null,
+        isNew: data.isNew ?? false,
+        minPrice: data.minPrice ?? null,
+        notes: data.notes || null,
+      },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        userId: session.userId,
+        action: "inventory_unit.update",
+        entityType: "InventoryUnit",
+        entityId: unitId,
+        before: {
+          locationId: unit.locationId,
+          condition: unit.condition,
+          imei: unit.imei,
+          serialNumber: unit.serialNumber,
+          batteryPct: unit.batteryPct,
+          isNew: unit.isNew,
+          minPrice: unit.minPrice?.toNumber() ?? null,
+          notes: unit.notes,
+        },
+        after: data,
+      },
+    });
+  });
+
+  revalidatePath("/inventory");
+  revalidatePath(`/inventory/${unitId}`);
+  redirect(`/inventory/${unitId}`);
+}
+
+export type DeleteUnitState = { error: string } | undefined;
+
+export async function deleteInventoryUnit(unitId: string): Promise<DeleteUnitState> {
+  const session = await requireSession();
+  if (!can(session.role, "MANAGE_INVENTORY")) {
+    return { error: "No tenes permiso para eliminar equipos." };
+  }
+
+  const unit = await prisma.inventoryUnit.findUnique({
+    where: { id: unitId },
+    include: {
+      saleItems: true,
+      consignment: true,
+      tradeInReceived: true,
+    },
+  });
+  if (!unit) return { error: "El equipo no existe." };
+
+  if (unit.saleItems.length > 0) {
+    return { error: "No se puede eliminar: tiene una venta asociada." };
+  }
+  if (unit.consignment) {
+    return { error: "No se puede eliminar: esta en consignacion." };
+  }
+  if (unit.tradeInReceived) {
+    return { error: "No se puede eliminar: ingreso por un plan canje registrado." };
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.inventoryUnitStatusEvent.deleteMany({ where: { inventoryUnitId: unitId } });
+    await tx.quoteItem.updateMany({ where: { inventoryUnitId: unitId }, data: { inventoryUnitId: null } });
+    await tx.purchaseItem.updateMany({ where: { inventoryUnitId: unitId }, data: { inventoryUnitId: null } });
+    await tx.reservation.deleteMany({ where: { inventoryUnitId: unitId } });
+    await tx.inventoryUnit.delete({ where: { id: unitId } });
+
+    await tx.auditLog.create({
+      data: {
+        userId: session.userId,
+        action: "inventory_unit.delete",
+        entityType: "InventoryUnit",
+        entityId: unitId,
+        before: { imei: unit.imei, serialNumber: unit.serialNumber, status: unit.status },
+      },
+    });
+  });
+
   revalidatePath("/inventory");
 }

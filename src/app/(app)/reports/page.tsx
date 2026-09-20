@@ -152,6 +152,28 @@ export default async function ReportsPage({
           </CardContent>
         </Card>
 
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Ventas por revendedor</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {data.resellerSales.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No hubo ventas de revendedores en este periodo.</p>
+            ) : (
+              <ul className="space-y-2">
+                {data.resellerSales.map((row, i) => (
+                  <li key={i} className="flex items-center justify-between text-sm">
+                    <span>
+                      {row.resellerName} <span className="text-muted-foreground">x{row.count}</span>
+                    </span>
+                    <span className="font-medium">{formatCurrency(row.total, row.currency as "USD" | "ARS")}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+
         {showFinancials && (
           <Card className="lg:col-span-2">
             <CardHeader>

@@ -18,16 +18,20 @@ import { AddStockButton } from "./add-stock-button";
 import { RemoveStockButton } from "./remove-stock-button";
 import { DeleteProductButton } from "./delete-product-button";
 import { VapeCurrencySelect } from "./vape-currency-select";
+import { SellRetailButton } from "./sell-retail-button";
 
 export default async function VapesPage() {
   const session = await requireSession();
   const showCosts = can(session.role, "VIEW_COSTS");
   const canManage = can(session.role, "MANAGE_VAPES");
 
-  const products = await prisma.vapeProduct.findMany({
-    orderBy: { name: "asc" },
-    include: { sellerStocks: true },
-  });
+  const [products, cashAccounts] = await Promise.all([
+    prisma.vapeProduct.findMany({
+      orderBy: { name: "asc" },
+      include: { sellerStocks: true },
+    }),
+    prisma.cashAccount.findMany({ orderBy: { name: "asc" } }),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -105,9 +109,15 @@ export default async function VapesPage() {
                   )}
                 </div>
                 {canManage && (
-                  <div className="mt-2 flex items-center justify-between border-t pt-2">
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t pt-2">
                     <VapeCurrencySelect productId={product.id} currency={product.currency} />
                     <div className="flex items-center gap-1">
+                      <SellRetailButton
+                        productId={product.id}
+                        maxQuantity={product.stockQuantity}
+                        defaultPrice={product.salePrice.toNumber()}
+                        cashAccounts={cashAccounts.filter((a) => a.currency === product.currency)}
+                      />
                       <AddStockButton productId={product.id} />
                       <RemoveStockButton productId={product.id} />
                       <DeleteProductButton productId={product.id} productName={product.name} />
@@ -182,6 +192,12 @@ export default async function VapesPage() {
                     {canManage && (
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
+                          <SellRetailButton
+                            productId={product.id}
+                            maxQuantity={product.stockQuantity}
+                            defaultPrice={product.salePrice.toNumber()}
+                            cashAccounts={cashAccounts.filter((a) => a.currency === product.currency)}
+                          />
                           <AddStockButton productId={product.id} />
                           <RemoveStockButton productId={product.id} />
                           <DeleteProductButton productId={product.id} productName={product.name} />

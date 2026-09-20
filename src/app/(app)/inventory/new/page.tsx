@@ -10,10 +10,7 @@ export default async function NewInventoryUnitPage() {
     redirect("/inventory");
   }
 
-  const [productsRaw, locations] = await Promise.all([
-    prisma.product.findMany({ orderBy: [{ brand: "asc" }, { model: "asc" }] }),
-    prisma.location.findMany({ orderBy: { name: "asc" } }),
-  ]);
+  const productsRaw = await prisma.product.findMany({ orderBy: [{ brand: "asc" }, { model: "asc" }] });
 
   const products = productsRaw.map((product) => ({
     id: product.id,
@@ -34,7 +31,7 @@ export default async function NewInventoryUnitPage() {
           Carga una unidad fisica al inventario propio.
         </p>
       </div>
-      <NewUnitForm products={products} locations={locations} />
+      <NewUnitForm products={products} />
     </div>
   );
 }

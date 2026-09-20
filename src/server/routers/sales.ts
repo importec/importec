@@ -42,6 +42,7 @@ const CreateSaleInput = z.object({
   items: z.array(SaleItemInput).min(1),
   payments: z.array(PaymentInput).min(1),
   tradeIn: TradeInInput.optional(),
+  resellerName: z.string().trim().max(100).optional(),
 });
 
 async function convertToSaleCurrency(
@@ -124,6 +125,7 @@ export const salesRouter = router({
           costTotal,
           profitTotal,
           soldByUserId: ctx.session.userId,
+          resellerName: input.resellerName || null,
         },
       });
 

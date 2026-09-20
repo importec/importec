@@ -272,6 +272,126 @@ export async function returnStockFromSeller(
   revalidatePath(`/vapes/sellers/${sellerId}`);
 }
 
+export async function recordSellerSale(
+  sellerId: string,
+  productId: string,
+  _prevState: PriceEditState,
+  formData: FormData,
+): Promise<PriceEditState> {
+  const session = await requireSession();
+  if (!can(session.role, "MANAGE_VAPES")) {
+    return { error: "No tenes permiso para esta accion." };
+  }
+
+  const parsed = z
+    .object({ quantity: z.coerce.number().int().positive(), cashAccountId: z.string().min(1) })
+    .safeParse(Object.fromEntries(formData.entries()));
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Revisa los datos." };
+  }
+  const { quantity, cashAccountId } = parsed.data;
+
+  const [sellerStock, product, account] = await Promise.all([
+    prisma.vapeSellerStock.findUnique({ where: { sellerId_productId: { sellerId, productId } } }),
+    prisma.vapeProduct.findUnique({ where: { id: productId } }),
+    prisma.cashAccount.findUnique({ where: { id: cashAccountId } }),
+  ]);
+  if (!sellerStock || sellerStock.quantity < quantity) {
+    return { error: "El vendedor no tiene esa cantidad para liquidar." };
+  }
+  if (!product) return { error: "El producto no existe." };
+  if (!account) return { error: "La cuenta no existe." };
+  if (account.currency !== product.currency) {
+    return { error: `Este producto es en ${product.currency}, elegi una cuenta de esa moneda.` };
+  }
+
+  const amount = product.salePrice.toNumber() * quantity;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.vapeSellerStock.update({
+      where: { sellerId_productId: { sellerId, productId } },
+      data: { quantity: { decrement: quantity } },
+    });
+
+    const seller = await tx.vapeSeller.findUniqueOrThrow({ where: { id: sellerId } });
+    await tx.cashMovement.create({
+      data: {
+        cashAccountId,
+        type: "IN",
+        amount,
+        currency: product.currency,
+        source: "VAPE_SALE",
+        referenceId: sellerId,
+        description: `Vendedor ${seller.name}: ${quantity}x ${product.name}${product.flavor ? ` (${product.flavor})` : ""}`,
+        createdByUserId: session.userId,
+      },
+    });
+  });
+
+  revalidatePath("/vapes");
+  revalidatePath("/finance");
+  revalidatePath(`/vapes/sellers/${sellerId}`);
+}
+
+const RetailSaleSchema = z.object({
+  quantity: z.coerce.number().int().positive(),
+  price: z.coerce.number().positive(),
+  cashAccountId: z.string().min(1),
+});
+
+export async function sellVapeRetail(
+  productId: string,
+  _prevState: PriceEditState,
+  formData: FormData,
+): Promise<PriceEditState> {
+  const session = await requireSession();
+  if (!can(session.role, "MANAGE_VAPES")) {
+    return { error: "No tenes permiso para registrar ventas." };
+  }
+
+  const parsed = RetailSaleSchema.safeParse(Object.fromEntries(formData.entries()));
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Revisa los datos." };
+  }
+  const { quantity, price, cashAccountId } = parsed.data;
+
+  const [product, account] = await Promise.all([
+    prisma.vapeProduct.findUnique({ where: { id: productId } }),
+    prisma.cashAccount.findUnique({ where: { id: cashAccountId } }),
+  ]);
+  if (!product) return { error: "El producto no existe." };
+  if (product.stockQuantity < quantity) {
+    return { error: `Solo hay ${product.stockQuantity} unidades en stock propio.` };
+  }
+  if (!account) return { error: "La cuenta no existe." };
+  if (account.currency !== product.currency) {
+    return { error: `Este producto es en ${product.currency}, elegi una cuenta de esa moneda.` };
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.vapeProduct.update({
+      where: { id: productId },
+      data: { stockQuantity: { decrement: quantity } },
+    });
+
+    await tx.cashMovement.create({
+      data: {
+        cashAccountId,
+        type: "IN",
+        amount: price * quantity,
+        currency: product.currency,
+        source: "VAPE_SALE",
+        referenceId: productId,
+        description: `Venta minorista: ${quantity}x ${product.name}${product.flavor ? ` (${product.flavor})` : ""}`,
+        createdByUserId: session.userId,
+      },
+    });
+  });
+
+  revalidatePath("/vapes");
+  revalidatePath("/finance");
+}
+
 const NewDebtSchema = z.object({
   debtorName: z.string().min(1, "El nombre es obligatorio"),
   phone: z.string().optional(),

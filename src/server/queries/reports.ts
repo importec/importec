@@ -17,12 +17,18 @@ function toSummary<T extends { currency: string; _count: number; _sum: { total?:
 export async function getReportsData(range: Range) {
   const { from, to } = range;
 
-  const [salesByCurrency, saleItems, expensesByCategory, deliveredRepairs, staleUnits, customersWithSales] =
+  const [salesByCurrency, salesByReseller, saleItems, expensesByCategory, deliveredRepairs, staleUnits, customersWithSales] =
     await Promise.all([
       prisma.sale.groupBy({
         by: ["currency"],
         where: { status: "CONFIRMED", createdAt: { gte: from, lte: to } },
         _sum: { total: true, profitTotal: true },
+        _count: true,
+      }),
+      prisma.sale.groupBy({
+        by: ["resellerName", "currency"],
+        where: { status: "CONFIRMED", createdAt: { gte: from, lte: to }, resellerName: { not: null } },
+        _sum: { total: true },
         _count: true,
       }),
       prisma.saleItem.findMany({
@@ -96,8 +102,16 @@ export async function getReportsData(range: Range) {
     else ageBuckets["90+"]++;
   }
 
+  const resellerSales = salesByReseller.map((row) => ({
+    resellerName: row.resellerName ?? "—",
+    currency: row.currency,
+    count: row._count,
+    total: row._sum.total?.toNumber() ?? 0,
+  }));
+
   return {
     salesSummary: toSummary(salesByCurrency),
+    resellerSales,
     topProducts,
     expenseRows,
     repairsDelivered: deliveredRepairs.length,

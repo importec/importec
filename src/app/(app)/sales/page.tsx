@@ -95,6 +95,7 @@ export default async function SalesPage() {
                   <div className="mt-2 flex items-center justify-between border-t pt-2 text-sm">
                     <span className="text-xs text-muted-foreground">
                       {sale.createdAt.toLocaleDateString("es-AR")} · {sale.soldByUser.name}
+                      {sale.resellerName && ` · Rev: ${sale.resellerName}`}
                     </span>
                     <div className="text-right">
                       <p className="font-medium tabular-nums">{formatCurrency(sale.total.toNumber(), sale.currency)}</p>
@@ -144,7 +145,12 @@ export default async function SalesPage() {
                         .filter(Boolean)
                         .join(", ")}
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{sale.soldByUser.name}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {sale.soldByUser.name}
+                      {sale.resellerName && (
+                        <span className="block text-xs">Revendedor: {sale.resellerName}</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <StatusBadge tone={STATUS_TONE[sale.status]}>{STATUS_LABEL[sale.status]}</StatusBadge>
                     </TableCell>

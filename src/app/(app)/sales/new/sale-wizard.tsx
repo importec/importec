@@ -47,6 +47,7 @@ export function SaleWizard({
 }) {
   const router = useRouter();
   const [customer, setCustomer] = useState<PickedCustomer | null>(null);
+  const [resellerName, setResellerName] = useState("");
   const [currency, setCurrency] = useState<"USD" | "ARS">("USD");
   const [items, setItems] = useState<CartItem[]>([]);
   const [discount, setDiscount] = useState(0);
@@ -178,6 +179,7 @@ export function SaleWizard({
               locationId: tradeIn.locationId,
             }
           : undefined,
+      resellerName: resellerName.trim() || undefined,
     });
   }
 
@@ -192,8 +194,20 @@ export function SaleWizard({
         <CardHeader>
           <CardTitle className="text-base">Cliente</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-4">
           <CustomerPicker value={customer} onChange={setCustomer} />
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="resellerName">Revendedor (opcional)</Label>
+            <Input
+              id="resellerName"
+              placeholder="ej. Juan Perez"
+              value={resellerName}
+              onChange={(e) => setResellerName(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Si esta venta la trajo un revendedor, anotalo aca para saber cuanto vendio cada uno.
+            </p>
+          </div>
         </CardContent>
       </Card>
 

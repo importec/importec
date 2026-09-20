@@ -372,6 +372,7 @@ model Sale {
   status          SaleStatus @default(CONFIRMED)
   soldByUserId    String
   soldByUser      User       @relation("SoldBy", fields: [soldByUserId], references: [id])
+  resellerName    String?
   createdAt       DateTime   @default(now())
 
   items    SaleItem[]
@@ -594,6 +595,7 @@ enum CashMovementSource {
   REPAIR
   CONSIGNMENT_SETTLEMENT
   INSTALLMENT
+  VAPE_SALE
   OTHER
 }
 

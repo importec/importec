@@ -14,8 +14,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { CATEGORY_LABELS, CONDITION_LABELS } from "@/lib/format";
-import { ProductCategory, ConditionGrade } from "@/generated/prisma/enums";
+import { CATEGORY_LABELS } from "@/lib/format";
+import { ProductCategory } from "@/generated/prisma/enums";
 
 type Product = {
   id: string;
@@ -28,17 +28,9 @@ type Product = {
   currency: "USD" | "ARS";
 };
 
-type Location = { id: string; name: string };
-
 const CURRENCY_LABELS: Record<string, string> = { USD: "Dolares (USD)", ARS: "Pesos (ARS)" };
 
-export function NewUnitForm({
-  products,
-  locations,
-}: {
-  products: Product[];
-  locations: Location[];
-}) {
+export function NewUnitForm({ products }: { products: Product[] }) {
   const [state, formAction, pending] = useActionState(createInventoryUnit, undefined);
   const [productId, setProductId] = useState<string>("new");
   const [newProductCurrency, setNewProductCurrency] = useState<"USD" | "ARS">("USD");
@@ -57,7 +49,6 @@ export function NewUnitForm({
       ]),
     ),
   };
-  const locationLabels = Object.fromEntries(locations.map((location) => [location.id, location.name]));
 
   return (
     <Card>
@@ -145,58 +136,6 @@ export function NewUnitForm({
             )}
           </fieldset>
 
-          <fieldset className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <legend className="mb-1 text-sm font-medium">Unidad fisica</legend>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="locationId">Ubicacion</Label>
-              <Select name="locationId" defaultValue={locations[0]?.id}>
-                <SelectTrigger id="locationId">
-                  <SelectValue>{(value: string) => locationLabels[value] ?? "Ubicacion"}</SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {locations.map((location) => (
-                    <SelectItem key={location.id} value={location.id}>
-                      {location.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="condition">Condicion</Label>
-              <Select name="condition" defaultValue={ConditionGrade.GOOD}>
-                <SelectTrigger id="condition">
-                  <SelectValue>{(value: string) => CONDITION_LABELS[value] ?? "Condicion"}</SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.values(ConditionGrade).map((condition) => (
-                    <SelectItem key={condition} value={condition}>
-                      {CONDITION_LABELS[condition]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="imei">IMEI</Label>
-              <Input id="imei" name="imei" />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="serialNumber">Numero de serie</Label>
-              <Input id="serialNumber" name="serialNumber" />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="batteryPct">Bateria (%)</Label>
-              <Input id="batteryPct" name="batteryPct" type="number" min={0} max={100} />
-            </div>
-            <div className="flex items-center gap-2 pt-6">
-              <input id="isNew" name="isNew" type="checkbox" className="size-4" />
-              <Label htmlFor="isNew" className="font-normal">
-                Es un equipo nuevo (sellado)
-              </Label>
-            </div>
-          </fieldset>
-
           <fieldset className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <legend className="mb-1 text-sm font-medium">
               Precios ({CURRENCY_LABELS[selectedCurrency]})
@@ -212,6 +151,16 @@ export function NewUnitForm({
             <div className="flex flex-col gap-2">
               <Label htmlFor="minPrice">Precio minimo (opcional)</Label>
               <Input id="minPrice" name="minPrice" type="number" step="0.01" />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="batteryPct">Bateria (%)</Label>
+              <Input id="batteryPct" name="batteryPct" type="number" min={0} max={100} />
+            </div>
+            <div className="flex items-center gap-2 pt-6 sm:col-span-2">
+              <input id="isNew" name="isNew" type="checkbox" className="size-4" />
+              <Label htmlFor="isNew" className="font-normal">
+                Es un equipo nuevo (sellado)
+              </Label>
             </div>
           </fieldset>
 
