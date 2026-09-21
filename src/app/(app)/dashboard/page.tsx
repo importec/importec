@@ -77,21 +77,13 @@ export default async function DashboardPage() {
           icon={ShoppingCart}
         />
         {showFinancials ? (
-          <>
-            <KpiCard
-              label="Disponible para comprar"
-              value={formatMoneyRows(data.cashAvailable)}
-              hint="Plata liquida en caja, bancos y billeteras (Lemon Cash, etc.)"
-              icon={Wallet}
-            />
-            <KpiCard
-              label="Ganancia potencial"
-              value={formatMoneyRows(data.potentialProfit)}
-              tone="positive"
-              hint="Si se vende todo el stock propio a precio de lista"
-              icon={TrendingUp}
-            />
-          </>
+          <KpiCard
+            label="Ganancia potencial"
+            value={formatMoneyRows(data.potentialProfit)}
+            tone="positive"
+            hint="Si se vende todo el stock propio a precio de lista"
+            icon={TrendingUp}
+          />
         ) : (
           <KpiCard
             label="Stock consignado"
@@ -173,12 +165,6 @@ export default async function DashboardPage() {
                     <p className="text-xs text-muted-foreground">Ganancia historica</p>
                     <p className="font-semibold tabular-nums text-success">
                       {data.consolidated.realizedProfitAllTimeUsd != null ? formatUsd(data.consolidated.realizedProfitAllTimeUsd) : "—"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Disponible para comprar</p>
-                    <p className="font-semibold tabular-nums">
-                      {data.consolidated.cashAvailableUsd != null ? formatUsd(data.consolidated.cashAvailableUsd) : "—"}
                     </p>
                   </div>
                 </div>
