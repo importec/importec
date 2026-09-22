@@ -82,15 +82,15 @@ export function CatalogForm() {
               <Input id="sealedPrice" name="sealedPrice" type="number" step="0.01" min={0} />
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="likeNewPrice">Como nuevo</Label>
+              <Label htmlFor="likeNewPrice">Excelente</Label>
               <Input id="likeNewPrice" name="likeNewPrice" type="number" step="0.01" min={0} />
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="goodPrice">Bueno</Label>
+              <Label htmlFor="goodPrice">Muy Bueno</Label>
               <Input id="goodPrice" name="goodPrice" type="number" step="0.01" min={0} />
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="fairPrice">Regular</Label>
+              <Label htmlFor="fairPrice">Bien</Label>
               <Input id="fairPrice" name="fairPrice" type="number" step="0.01" min={0} />
             </div>
           </div>

@@ -107,7 +107,7 @@ export default async function CatalogPage({
                       />
                     </div>
                     <div className="flex items-center justify-between gap-1.5">
-                      <span className="text-xs text-muted-foreground">Como nuevo</span>
+                      <span className="text-xs text-muted-foreground">Excelente</span>
                       <EditableNumber
                         value={entry.likeNewPrice?.toNumber() ?? null}
                         onSave={updateCatalogPrice.bind(null, entry.id, "likeNewPrice")}
@@ -115,7 +115,7 @@ export default async function CatalogPage({
                       />
                     </div>
                     <div className="flex items-center justify-between gap-1.5">
-                      <span className="text-xs text-muted-foreground">Bueno</span>
+                      <span className="text-xs text-muted-foreground">Muy Bueno</span>
                       <EditableNumber
                         value={entry.goodPrice?.toNumber() ?? null}
                         onSave={updateCatalogPrice.bind(null, entry.id, "goodPrice")}
@@ -123,7 +123,7 @@ export default async function CatalogPage({
                       />
                     </div>
                     <div className="flex items-center justify-between gap-1.5">
-                      <span className="text-xs text-muted-foreground">Regular</span>
+                      <span className="text-xs text-muted-foreground">Bien</span>
                       <EditableNumber
                         value={entry.fairPrice?.toNumber() ?? null}
                         onSave={updateCatalogPrice.bind(null, entry.id, "fairPrice")}
@@ -142,9 +142,9 @@ export default async function CatalogPage({
                   <TableRow>
                     <TableHead>Modelo</TableHead>
                     <TableHead className="text-right">Sellado</TableHead>
-                    <TableHead className="text-right">Como nuevo</TableHead>
-                    <TableHead className="text-right">Bueno</TableHead>
-                    <TableHead className="text-right">Regular</TableHead>
+                    <TableHead className="text-right">Excelente</TableHead>
+                    <TableHead className="text-right">Muy Bueno</TableHead>
+                    <TableHead className="text-right">Bien</TableHead>
                     {canManage && <TableHead className="w-10" />}
                   </TableRow>
                 </TableHeader>

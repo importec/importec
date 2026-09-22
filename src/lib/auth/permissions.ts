@@ -19,6 +19,7 @@ export const CAPABILITIES = {
   MANAGE_FINANCE: ["ADMIN", "SUPERVISOR", "CASHIER"],
   MANAGE_SUPPLIERS: ["ADMIN", "SUPERVISOR"],
   MANAGE_USERS: ["ADMIN"],
+  MANAGE_MARKETING: ["ADMIN", "SUPERVISOR"],
 } as const satisfies Record<string, readonly UserRole[]>;
 
 export type Capability = keyof typeof CAPABILITIES;

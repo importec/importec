@@ -126,6 +126,24 @@ model BuyPriceCatalog {
   @@index([category, brand, model])
 }
 
+enum ContentTimeSlot {
+  MORNING
+  MIDDAY
+}
+
+// Calendario semanal de contenido para el CM: que catalogo mandar cada dia,
+// en cada franja horaria. Es una referencia fija por dia de la semana (1 a
+// 6, lunes a sabado), no un calendario con fechas puntuales.
+model ContentCalendarSlot {
+  id        String          @id @default(cuid())
+  dayOfWeek Int
+  timeSlot  ContentTimeSlot
+  content   String
+  updatedAt DateTime        @updatedAt
+
+  @@unique([dayOfWeek, timeSlot])
+}
+
 enum ConditionGrade {
   NEW
   LIKE_NEW
