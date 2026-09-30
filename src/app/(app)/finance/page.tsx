@@ -15,10 +15,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/format";
-import { Wallet, ArrowDownCircle, ArrowUpCircle, CalendarClock } from "lucide-react";
+import { Wallet, ArrowDownCircle, ArrowUpCircle, CalendarClock, HandCoins } from "lucide-react";
+import { EditableNumber } from "@/components/inventory/editable-number";
 import { MovementForm } from "./movement-form";
 import { ExchangeRateForm } from "./exchange-rate-form";
 import { NewAccountForm } from "./new-account-form";
+import { updatePartnerCapital } from "./actions";
 
 const SOURCE_LABELS: Record<string, string> = {
   SALE: "Venta",
@@ -35,7 +37,7 @@ export default async function FinancePage() {
   const session = await requireSession();
   const canManage = can(session.role, "MANAGE_FINANCE");
 
-  const [balances, movements, payables, latestRate, pendingInstallments] = await Promise.all([
+  const [balances, movements, payables, latestRate, pendingInstallments, partnerCapital] = await Promise.all([
     getCashAccountBalances(),
     prisma.cashMovement.findMany({
       orderBy: { createdAt: "desc" },
@@ -51,7 +53,16 @@ export default async function FinancePage() {
       where: { paidAt: null },
       include: { plan: true },
     }),
+    prisma.partnerCapital.findMany({ orderBy: { name: "asc" } }),
   ]);
+
+  const partnerCapitalByCurrency = new Map<string, number>();
+  for (const partner of partnerCapital) {
+    partnerCapitalByCurrency.set(
+      partner.currency,
+      (partnerCapitalByCurrency.get(partner.currency) ?? 0) + partner.amount.toNumber(),
+    );
+  }
 
   const installmentsByCurrency = new Map<string, number>();
   for (const installment of pendingInstallments) {
@@ -117,6 +128,50 @@ export default async function FinancePage() {
           icon={CalendarClock}
         />
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <HandCoins className="size-4" />
+            Capital de los socios
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {partnerCapital.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Todavia no hay capital de socios cargado.</p>
+          ) : (
+            <ul className="space-y-2">
+              {partnerCapital.map((partner) => (
+                <li key={partner.id} className="flex items-center justify-between text-sm">
+                  <span>{partner.name}</span>
+                  {canManage ? (
+                    <EditableNumber
+                      value={partner.amount.toNumber()}
+                      onSave={updatePartnerCapital.bind(null, partner.id)}
+                      currency={partner.currency}
+                    />
+                  ) : (
+                    <span className="font-medium tabular-nums">
+                      {formatCurrency(partner.amount.toNumber(), partner.currency)}
+                    </span>
+                  )}
+                </li>
+              ))}
+              <li className="flex items-center justify-between border-t pt-2 text-sm font-medium">
+                <span>Total</span>
+                <span className="tabular-nums">
+                  {Array.from(partnerCapitalByCurrency.entries())
+                    .map(([currency, amount]) => formatCurrency(amount, currency as "USD" | "ARS"))
+                    .join(" + ")}
+                </span>
+              </li>
+            </ul>
+          )}
+          <p className="mt-3 text-xs text-muted-foreground">
+            Toca un monto para editarlo cuando alguien ponga mas plata o retire capital.
+          </p>
+        </CardContent>
+      </Card>
 
       {canManage && (
         <Card>

@@ -249,3 +249,19 @@ export async function deleteInstallmentPlan(planId: string): Promise<MovementFor
 
   revalidatePath("/finance/installments");
 }
+
+export async function updatePartnerCapital(partnerId: string, amount: number): Promise<MovementFormState> {
+  const session = await requireSession();
+  if (!can(session.role, "MANAGE_FINANCE")) {
+    return { error: "No tenes permiso para editar el capital de los socios." };
+  }
+  if (amount < 0) {
+    return { error: "El monto no puede ser negativo." };
+  }
+
+  const partner = await prisma.partnerCapital.findUnique({ where: { id: partnerId } });
+  if (!partner) return { error: "El socio no existe." };
+
+  await prisma.partnerCapital.update({ where: { id: partnerId }, data: { amount } });
+  revalidatePath("/finance");
+}
