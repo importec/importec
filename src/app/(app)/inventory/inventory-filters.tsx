@@ -20,7 +20,7 @@ const CATEGORY_SELECT_LABELS: Record<string, string> = {
   ...CATEGORY_LABELS,
 };
 const STATUS_SELECT_LABELS: Record<string, string> = {
-  [ALL]: "Todos los estados",
+  [ALL]: "En stock (sin vendidos)",
   ...STATUS_LABELS,
 };
 const OWNER_SELECT_LABELS: Record<string, string> = {
@@ -87,7 +87,7 @@ export function InventoryFilters() {
           <SelectValue>{(value: string) => STATUS_SELECT_LABELS[value] ?? "Estado"}</SelectValue>
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value={ALL}>Todos los estados</SelectItem>
+          <SelectItem value={ALL}>En stock (sin vendidos)</SelectItem>
           {Object.values(InventoryUnitStatus).map((status) => (
             <SelectItem key={status} value={status}>
               {STATUS_LABELS[status]}

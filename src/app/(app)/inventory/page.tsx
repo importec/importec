@@ -39,6 +39,8 @@ export default async function InventoryPage({
   }
   if (params.status) {
     where.status = params.status as InventoryUnitStatus;
+  } else {
+    where.status = { notIn: ["SOLD", "RETURNED"] };
   }
   if (params.owner) {
     where.ownerType = params.owner as OwnerType;
