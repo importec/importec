@@ -13,9 +13,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { customerName, formatCurrency, productTitle } from "@/lib/format";
+import { DeleteTradeInButton } from "./delete-trade-in-button";
 
 export default async function TradeInsPage() {
   const session = await requireSession();
+  const canDelete = can(session.role, "MANAGE_INVENTORY");
 
   const tradeIns = await prisma.tradeIn.findMany({
     orderBy: { createdAt: "desc" },
@@ -52,24 +54,23 @@ export default async function TradeInsPage() {
           </div>
         ) : (
           tradeIns.map((tradeIn) => (
-            <Link
-              key={tradeIn.id}
-              href={`/inventory/${tradeIn.receivedInventoryUnitId}`}
-              className="rounded-lg border bg-card p-3"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <span className="min-w-0 flex-1 truncate font-medium">
-                  {productTitle(tradeIn.receivedInventoryUnit.product)}
-                </span>
-                <span className="shrink-0 font-medium">
-                  {formatCurrency(tradeIn.appraisedValue.toNumber(), tradeIn.currency)}
-                </span>
-              </div>
-              <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                {tradeIn.createdAt.toLocaleDateString("es-AR")} ·{" "}
-                {tradeIn.sale.customer ? customerName(tradeIn.sale.customer) : "Consumidor final"}
-              </p>
-            </Link>
+            <div key={tradeIn.id} className="flex items-start gap-2 rounded-lg border bg-card p-3">
+              <Link href={`/inventory/${tradeIn.receivedInventoryUnitId}`} className="min-w-0 flex-1">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="min-w-0 flex-1 truncate font-medium">
+                    {productTitle(tradeIn.receivedInventoryUnit.product)}
+                  </span>
+                  <span className="shrink-0 font-medium">
+                    {formatCurrency(tradeIn.appraisedValue.toNumber(), tradeIn.currency)}
+                  </span>
+                </div>
+                <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                  {tradeIn.createdAt.toLocaleDateString("es-AR")} ·{" "}
+                  {tradeIn.sale.customer ? customerName(tradeIn.sale.customer) : "Consumidor final"}
+                </p>
+              </Link>
+              {canDelete && <DeleteTradeInButton tradeInId={tradeIn.id} />}
+            </div>
           ))
         )}
       </div>
@@ -83,12 +84,13 @@ export default async function TradeInsPage() {
               <TableHead>Cliente</TableHead>
               <TableHead>Equipo recibido</TableHead>
               <TableHead className="text-right">Valor tomado</TableHead>
+              {canDelete && <TableHead className="w-10" />}
             </TableRow>
           </TableHeader>
           <TableBody>
             {tradeIns.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="h-40 text-center">
+                <TableCell colSpan={5} className="h-40 text-center">
                   <div className="flex flex-col items-center gap-2 text-muted-foreground">
                     <Repeat className="size-8" />
                     <p>Todavia no se registraron canjes.</p>
@@ -115,6 +117,11 @@ export default async function TradeInsPage() {
                   <TableCell className="text-right">
                     {formatCurrency(tradeIn.appraisedValue.toNumber(), tradeIn.currency)}
                   </TableCell>
+                  {canDelete && (
+                    <TableCell>
+                      <DeleteTradeInButton tradeInId={tradeIn.id} />
+                    </TableCell>
+                  )}
                 </TableRow>
               ))
             )}
